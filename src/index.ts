@@ -86,7 +86,15 @@ function normalizeFields(fields: any): object | undefined {
   return undefined;
 }
 
-// Anki-Connect API helper
+// Helper for base64 encoding (for media operations)
+function encodeBase64(data: string | Buffer): string {
+  if (typeof data === 'string') {
+    return Buffer.from(data).toString('base64');
+  }
+  return data.toString('base64');
+}
+
+// Anki-Connect API helper with improved error handling
 async function ankiConnect(action: string, params = {}): Promise<any> {
   try {
     const response = await fetch(ANKI_CONNECT_URL, {
@@ -96,7 +104,11 @@ async function ankiConnect(action: string, params = {}): Promise<any> {
     });
 
     const data = await response.json() as { error?: string; result?: any };
-    if (data.error) {throw new Error(data.error);}
+    if (data.error) {
+      // Clean up nested error messages
+      const cleanError = data.error.replace(/^Anki-Connect: /, '');
+      throw new Error(`${action} failed: ${cleanError}`);
+    }
     return data.result;
   } catch (error: any) {
     throw new McpError(
@@ -229,13 +241,15 @@ const tools: Record<string, ToolDef> = {
   },
   
   deleteDecks: {
-    description: "Permanently deletes specified decks. CAUTION: Setting cardsToo=true (default) will delete all cards in the decks. Cards cannot be recovered after deletion. cardsToo MUST be explicitly set. Deleting parent deck deletes all subdecks",
+    description: "Permanently deletes specified decks. CAUTION: Setting cardsToo=true (default) will delete all cards in the decks. Cards cannot be recovered after deletion. cardsToo MUST be explicitly set. Deleting parent deck deletes all subdecks. Returns true on success",
     schema: z.object({
       decks: z.array(z.string()).describe("Deck names to delete"),
       cardsToo: z.boolean().default(true).describe("Also delete cards"),
     }),
-    handler: async ({ decks, cardsToo }) => 
-      ankiConnect("deleteDecks", { decks, cardsToo }),
+    handler: async ({ decks, cardsToo }) => {
+      const result = await ankiConnect("deleteDecks", { decks, cardsToo });
+      return result === null ? true : result; // Normalize null to true
+    },
   },
   
   // === NOTE OPERATIONS ===
@@ -346,7 +360,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   updateNote: {
-    description: "Updates an existing note's fields and/or tags. Only provided fields are updated, others remain unchanged. Field names must match the model exactly. Tags array replaces all existing tags (not additive). Changes affect all cards generated from this note. Updates modification time. Note: Changing fields that affect card generation may reset card scheduling. IMPORTANT: Field names are case-sensitive. Use notesInfo first to check current field names",
+    description: "Updates an existing note's fields and/or tags. Only provided fields are updated, others remain unchanged. Field names must match the model exactly. Tags array replaces all existing tags (not additive). Changes affect all cards generated from this note. Updates modification time. Note: Changing fields that affect card generation may reset card scheduling. IMPORTANT: Field names are case-sensitive. Use notesInfo first to check current field names. Returns true on success",
     schema: z.object({
       id: z.union([z.number(), z.string()]).describe("Note ID"),
       fields: z.record(z.string()).optional().describe("Fields to update"),
@@ -372,20 +386,24 @@ const tools: Record<string, ToolDef> = {
       
       debug('Sending to Anki-Connect:', noteData);
       
-      return ankiConnect("updateNote", {
+      const result = await ankiConnect("updateNote", {
         note: noteData
       });
+      return result === null ? true : result; // Normalize null to true
     },
   },
   
   deleteNotes: {
-    description: "Permanently deletes notes and all their associated cards. CAUTION: This is irreversible. Cards' review history is also deleted. Deletion is immediate and cannot be undone. Use suspend instead if you might need the notes later. Accepts array of note IDs",
+    description: "Permanently deletes notes and all their associated cards. CAUTION: This is irreversible. Cards' review history is also deleted. Deletion is immediate and cannot be undone. Use suspend instead if you might need the notes later. Accepts array of note IDs. Returns true on success",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs to delete"),
     }),
-    handler: async ({ notes }) => ankiConnect("deleteNotes", { 
-      notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ notes }) => {
+      const result = await ankiConnect("deleteNotes", { 
+        notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+      });
+      return result === null ? true : result; // Normalize null to true
+    },
   },
   
   notesInfo: {
@@ -645,13 +663,16 @@ const tools: Record<string, ToolDef> = {
   },
   
   unsuspend: {
-    description: "Restores suspended cards to active review queue with all scheduling data intact. Cards resume from where they left off - due cards become immediately due, learning cards continue learning phase. No scheduling information is lost during suspension period",
+    description: "Restores suspended cards to active review queue with all scheduling data intact. Cards resume from where they left off - due cards become immediately due, learning cards continue learning phase. No scheduling information is lost during suspension period. Returns true on success",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to unsuspend"),
     }),
-    handler: async ({ cards }) => ankiConnect("unsuspend", { 
-      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ cards }) => {
+      const result = await ankiConnect("unsuspend", { 
+        cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+      });
+      return result === null ? true : result; // Normalize null to true
+    },
   },
   
   getEaseFactors: {
@@ -847,15 +868,21 @@ const tools: Record<string, ToolDef> = {
   
   // === MEDIA ===
   storeMediaFile: {
-    description: "Stores a media file in Anki's media folder. Accepts filename and base64-encoded data. Media is automatically synced to AnkiWeb. Supported formats: images (jpg, png, gif, svg), audio (mp3, ogg, wav), video (mp4, webm). File is available immediately for use in cards with HTML tags like <img> or [sound:]. Returns filename on success",
+    description: "Stores a media file in Anki's media folder. REQUIRES one of: data (base64), path, or url. Media is automatically synced to AnkiWeb. Supported formats: images (jpg, png, gif, svg), audio (mp3, ogg, wav), video (mp4, webm). File is available immediately for use in cards with HTML tags like <img> or [sound:]. Example with base64: {filename: 'test.txt', data: 'SGVsbG8gV29ybGQ='}. Returns filename on success",
     schema: z.object({
       filename: z.string().describe("File name"),
-      data: z.string().optional().describe("Base64 data"),
-      url: z.string().optional().describe("URL to download"),
-      path: z.string().optional().describe("File path"),
-      deleteExisting: z.boolean().optional().default(true),
+      data: z.string().optional().describe("Base64-encoded file content"),
+      url: z.string().optional().describe("URL to download from"),
+      path: z.string().optional().describe("Local file path to read from"),
+      deleteExisting: z.boolean().optional().default(true).describe("Replace if file exists"),
     }),
-    handler: async (args) => ankiConnect("storeMediaFile", args),
+    handler: async (args) => {
+      // Validate that at least one data source is provided
+      if (!args.data && !args.url && !args.path) {
+        throw new Error("storeMediaFile requires one of: data (base64), url, or path");
+      }
+      return ankiConnect("storeMediaFile", args);
+    },
   },
   
   retrieveMediaFile: {
