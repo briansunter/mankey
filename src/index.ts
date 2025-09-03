@@ -1114,9 +1114,12 @@ const tools: Record<string, ToolDef> = {
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to reset"),
     }),
-    handler: async ({ cards }) => ankiConnect("forgetCards", { 
-      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ cards }) => {
+      const result = await ankiConnect("forgetCards", { 
+        cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+      });
+      return result === null ? true : result;
+    },
   },
   
   relearnCards: {
@@ -1124,9 +1127,12 @@ const tools: Record<string, ToolDef> = {
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
-    handler: async ({ cards }) => ankiConnect("relearnCards", { 
-      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ cards }) => {
+      const result = await ankiConnect("relearnCards", { 
+        cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+      });
+      return result === null ? true : result;
+    },
   },
   
   setSpecificValueOfCard: {
@@ -1163,10 +1169,13 @@ const tools: Record<string, ToolDef> = {
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to move"),
       deck: z.string().describe("Target deck name"),
     }),
-    handler: async ({ cards, deck }) => ankiConnect("changeDeck", { 
-      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
-      deck
-    }),
+    handler: async ({ cards, deck }) => {
+      const result = await ankiConnect("changeDeck", { 
+        cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
+        deck
+      });
+      return result === null ? true : result;
+    },
   },
   
   saveDeckConfig: {
@@ -1202,8 +1211,10 @@ const tools: Record<string, ToolDef> = {
     schema: z.object({
       configId: z.number().describe("Configuration ID to remove"),
     }),
-    handler: async ({ configId }) => 
-      ankiConnect("removeDeckConfigId", { configId }),
+    handler: async ({ configId }) => {
+      const result = await ankiConnect("removeDeckConfigId", { configId });
+      return result === null ? true : result;
+    },
   },
   
   // Model Operations
@@ -1270,12 +1281,15 @@ const tools: Record<string, ToolDef> = {
         fields: z.record(z.string()),
       }),
     }),
-    handler: async ({ note }) => ankiConnect("updateNoteFields", { 
-      note: {
-        id: typeof note.id === "string" ? parseInt(note.id, 10) : note.id,
-        fields: note.fields
-      }
-    }),
+    handler: async ({ note }) => {
+      const result = await ankiConnect("updateNoteFields", { 
+        note: {
+          id: typeof note.id === "string" ? parseInt(note.id, 10) : note.id,
+          fields: note.fields
+        }
+      });
+      return result === null ? true : result;
+    },
   },
   
   getNoteTags: {
@@ -1291,7 +1305,10 @@ const tools: Record<string, ToolDef> = {
   clearUnusedTags: {
     description: "Removes all tags from the tag list that aren't assigned to any notes. Cleans up tag autocomplete and tag browser. Safe operation - only removes truly unused tags. Useful after bulk deletions or tag reorganization. No effect on notes",
     schema: z.object({}),
-    handler: async () => ankiConnect("clearUnusedTags"),
+    handler: async () => {
+      const result = await ankiConnect("clearUnusedTags");
+      return result === null ? true : result;
+    },
   },
   
   replaceTags: {
@@ -1301,12 +1318,14 @@ const tools: Record<string, ToolDef> = {
       tagToReplace: z.string().describe("Tag to replace"),
       replaceWithTag: z.string().describe("Replacement tag"),
     }),
-    handler: async ({ notes, tagToReplace, replaceWithTag }) => 
-      ankiConnect("replaceTags", { 
+    handler: async ({ notes, tagToReplace, replaceWithTag }) => {
+      const result = await ankiConnect("replaceTags", { 
         notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
         tag_to_replace: tagToReplace,
         replace_with_tag: replaceWithTag
-      }),
+      });
+      return result === null ? true : result;
+    },
   },
   
   replaceTagsInAllNotes: {
@@ -1315,11 +1334,13 @@ const tools: Record<string, ToolDef> = {
       tagToReplace: z.string().describe("Tag to replace"),
       replaceWithTag: z.string().describe("Replacement tag"),
     }),
-    handler: async ({ tagToReplace, replaceWithTag }) => 
-      ankiConnect("replaceTagsInAllNotes", { 
+    handler: async ({ tagToReplace, replaceWithTag }) => {
+      const result = await ankiConnect("replaceTagsInAllNotes", { 
         tag_to_replace: tagToReplace,
         replace_with_tag: replaceWithTag
-      }),
+      });
+      return result === null ? true : result;
+    },
   },
   
   removeEmptyNotes: {
@@ -1343,7 +1364,7 @@ const tools: Record<string, ToolDef> = {
     description: "Gets complete review history for specified cards. Returns array of review arrays, each containing: reviewTime, cardID, ease, interval, lastInterval, factor, reviewDuration. Essential for analyzing learning patterns, identifying problem cards, or exporting review data. Large histories may be substantial",
     schema: z.object({
       deck: z.string().describe("Deck name"),
-      startID: z.number().optional().describe("Start review ID"),
+      startID: z.number().describe("Start review ID"),
     }),
     handler: async ({ deck, startID }) => 
       ankiConnect("cardReviews", { deck, startID }),
