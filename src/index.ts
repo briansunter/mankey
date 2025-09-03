@@ -167,11 +167,29 @@ const tools: Record<string, ToolDef> = {
   },
   
   findNotes: {
-    description: "Search for notes using Anki query syntax",
+    description: "Search for notes using Anki query syntax. Supports 'deck:current' for current deck. Returns paginated results",
     schema: z.object({
-      query: z.string().describe("Search query (e.g., 'deck:Default')"),
+      query: z.string().describe("Search query (e.g., 'deck:current', 'deck:Default', 'tag:vocab')"),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum notes to return (default 100, max 1000)"),
     }),
-    handler: async ({ query }) => ankiConnect("findNotes", { query }),
+    handler: async ({ query, offset, limit }) => {
+      const allNotes = await ankiConnect("findNotes", { query });
+      const total = allNotes.length;
+      const effectiveLimit = Math.min(limit, 1000);
+      const paginatedNotes = allNotes.slice(offset, offset + effectiveLimit);
+      
+      return {
+        notes: paginatedNotes,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   updateNote: {
@@ -201,13 +219,37 @@ const tools: Record<string, ToolDef> = {
   },
   
   notesInfo: {
-    description: "Get detailed information about notes",
+    description: "Get detailed information about notes. Automatically paginates large requests",
     schema: z.object({
-      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs (automatically batched if >100)"),
     }),
-    handler: async ({ notes }) => ankiConnect("notesInfo", { 
-      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ notes }) => {
+      const noteIds = notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id);
+      
+      // Batch process if more than 100 notes
+      if (noteIds.length <= 100) {
+        return ankiConnect("notesInfo", { notes: noteIds });
+      }
+      
+      // Process in batches of 100
+      const batchSize = 100;
+      const results = [];
+      
+      for (let i = 0; i < noteIds.length; i += batchSize) {
+        const batch = noteIds.slice(i, i + batchSize);
+        const batchResult = await ankiConnect("notesInfo", { notes: batch });
+        results.push(...batchResult);
+      }
+      
+      return {
+        notes: results,
+        metadata: {
+          total: results.length,
+          batches: Math.ceil(noteIds.length / batchSize),
+          batchSize,
+        }
+      };
+    },
   },
   
   getTags: {
@@ -242,20 +284,39 @@ const tools: Record<string, ToolDef> = {
   
   // === CARD OPERATIONS ===
   findCards: {
-    description: "Find cards using Anki query syntax. Note: 'is:due' returns review cards only. Use getNextCards for learning+review queue order. Supports 'deck:current' for current deck",
+    description: "Find cards using Anki query syntax. Note: 'is:due' returns review cards only. Use getNextCards for learning+review queue order. Supports 'deck:current' for current deck. Returns paginated results",
     schema: z.object({
       query: z.string().describe("Search query (e.g. 'deck:current', 'deck:Default is:due', 'tag:japanese')"),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum cards to return (default 100, max 1000)"),
     }),
-    handler: async ({ query }) => ankiConnect("findCards", { query }),
+    handler: async ({ query, offset, limit }) => {
+      const allCards = await ankiConnect("findCards", { query });
+      const total = allCards.length;
+      const effectiveLimit = Math.min(limit, 1000);
+      const paginatedCards = allCards.slice(offset, offset + effectiveLimit);
+      
+      return {
+        cards: paginatedCards,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   getNextCards: {
-    description: "Get next cards in review queue following Anki's priority: 1) Learning cards (new/failed), 2) Review cards (due), 3) New cards. Returns cards in the order they'll appear",
+    description: "Get next cards in review queue following Anki's priority: 1) Learning cards (new/failed), 2) Review cards (due), 3) New cards. Returns cards in the order they'll appear. Supports pagination",
     schema: z.object({
       deck: z.string().describe("Deck name (or 'current' for current deck)").optional(),
-      limit: z.number().describe("Maximum cards to return").default(10),
+      limit: z.number().describe("Maximum cards to return (default 10, max 100)").default(10),
+      offset: z.number().describe("Starting position for pagination").default(0).optional(),
     }),
-    handler: async ({ deck, limit }) => {
+    handler: async ({ deck, limit, offset = 0 }) => {
       // Build deck prefix for queries
       const deckPrefix = deck === 'current' ? 'deck:current' : 
                         deck ? `deck:"${deck}"` : '';
@@ -278,15 +339,27 @@ const tools: Record<string, ToolDef> = {
         : "is:new";
       const newCards = await ankiConnect("findCards", { query: newQuery });
       
-      // Combine in priority order and limit
-      const allCards = [...learningCards, ...reviewCards, ...newCards].slice(0, limit);
+      // Combine in priority order
+      const allCards = [...learningCards, ...reviewCards, ...newCards];
+      const total = allCards.length;
+      const effectiveLimit = Math.min(limit, 100);
+      const paginatedCards = allCards.slice(offset, offset + effectiveLimit);
       
-      if (allCards.length === 0) {
-        return { cards: [], message: "No cards due for review" };
+      if (paginatedCards.length === 0) {
+        return { 
+          cards: [], 
+          message: "No cards due for review",
+          pagination: {
+            offset,
+            limit: effectiveLimit,
+            total,
+            hasMore: false
+          }
+        };
       }
       
       // Get detailed info for these cards
-      const cardInfo = await ankiConnect("cardsInfo", { cards: allCards });
+      const cardInfo = await ankiConnect("cardsInfo", { cards: paginatedCards });
       
       // Categorize by queue type
       const categorized = {
@@ -306,12 +379,18 @@ const tools: Record<string, ToolDef> = {
       }
       
       return {
-        totalCards: allCards.length,
         cards: cardInfo,
         breakdown: {
           learning: categorized.learning.length,
           review: categorized.review.length,
           new: categorized.new.length,
+        },
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null
         },
         queueOrder: "Learning cards shown first, then reviews, then new cards"
       };
@@ -319,13 +398,37 @@ const tools: Record<string, ToolDef> = {
   },
   
   cardsInfo: {
-    description: "Get detailed card information",
+    description: "Get detailed card information. Automatically paginates large requests",
     schema: z.object({
-      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs (automatically batched if >100)"),
     }),
-    handler: async ({ cards }) => ankiConnect("cardsInfo", { 
-      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
-    }),
+    handler: async ({ cards }) => {
+      const cardIds = cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id);
+      
+      // Batch process if more than 100 cards
+      if (cardIds.length <= 100) {
+        return ankiConnect("cardsInfo", { cards: cardIds });
+      }
+      
+      // Process in batches of 100
+      const batchSize = 100;
+      const results = [];
+      
+      for (let i = 0; i < cardIds.length; i += batchSize) {
+        const batch = cardIds.slice(i, i + batchSize);
+        const batchResult = await ankiConnect("cardsInfo", { cards: batch });
+        results.push(...batchResult);
+      }
+      
+      return {
+        cards: results,
+        metadata: {
+          total: results.length,
+          batches: Math.ceil(cardIds.length / batchSize),
+          batchSize,
+        }
+      };
+    },
   },
   
   suspend: {
@@ -417,13 +520,14 @@ const tools: Record<string, ToolDef> = {
   },
   
   getDueCardsDetailed: {
-    description: "Get due cards with detailed categorization by queue type (learning vs review)",
+    description: "Get due cards with detailed categorization by queue type (learning vs review). Use 'current' for current deck",
     schema: z.object({
-      deck: z.string().describe("Deck name").optional(),
+      deck: z.string().describe("Deck name (or 'current' for current deck)").optional(),
     }),
     handler: async ({ deck }) => {
       // Query for different card states
-      const baseQuery = deck ? `deck:"${deck}"` : "";
+      const baseQuery = deck === 'current' ? 'deck:current' :
+                       deck ? `deck:"${deck}"` : "";
       
       // Learning cards (queue 1 or 3, due soon)
       const learningQuery = baseQuery ? `${baseQuery} (queue:1 OR queue:3)` : "(queue:1 OR queue:3)";
@@ -636,8 +740,19 @@ const tools: Record<string, ToolDef> = {
 
 // Create MCP server
 const server = new Server(
-  { name: "anki-mcp-server", version: "1.0.0" },
-  { capabilities: { tools: {} } }
+  { 
+    name: "anki-mcp-server", 
+    version: "1.1.0"
+  },
+  { 
+    capabilities: { 
+      tools: {},
+      pagination: {
+        maxPageSize: 1000,
+        defaultPageSize: 100
+      }
+    }
+  }
 );
 
 // Register list tools handler
