@@ -242,11 +242,80 @@ const tools: Record<string, ToolDef> = {
   
   // === CARD OPERATIONS ===
   findCards: {
-    description: "Find cards using Anki query syntax",
+    description: "Find cards using Anki query syntax. Note: 'is:due' returns review cards only. Use getNextCards for learning+review queue order. Supports 'deck:current' for current deck",
     schema: z.object({
-      query: z.string().describe("Search query"),
+      query: z.string().describe("Search query (e.g. 'deck:current', 'deck:Default is:due', 'tag:japanese')"),
     }),
     handler: async ({ query }) => ankiConnect("findCards", { query }),
+  },
+  
+  getNextCards: {
+    description: "Get next cards in review queue following Anki's priority: 1) Learning cards (new/failed), 2) Review cards (due), 3) New cards. Returns cards in the order they'll appear",
+    schema: z.object({
+      deck: z.string().describe("Deck name (or 'current' for current deck)").optional(),
+      limit: z.number().describe("Maximum cards to return").default(10),
+    }),
+    handler: async ({ deck, limit }) => {
+      // Build deck prefix for queries
+      const deckPrefix = deck === 'current' ? 'deck:current' : 
+                        deck ? `deck:"${deck}"` : '';
+      
+      // Get learning cards first (queue=1 or queue=3)
+      const learningQuery = deckPrefix 
+        ? `${deckPrefix} (queue:1 OR queue:3)`
+        : "(queue:1 OR queue:3)";
+      const learningCards = await ankiConnect("findCards", { query: learningQuery });
+      
+      // Get review cards (queue=2 and due)
+      const reviewQuery = deckPrefix
+        ? `${deckPrefix} is:due`
+        : "is:due";
+      const reviewCards = await ankiConnect("findCards", { query: reviewQuery });
+      
+      // Get new cards if needed (queue=0)
+      const newQuery = deckPrefix
+        ? `${deckPrefix} is:new`
+        : "is:new";
+      const newCards = await ankiConnect("findCards", { query: newQuery });
+      
+      // Combine in priority order and limit
+      const allCards = [...learningCards, ...reviewCards, ...newCards].slice(0, limit);
+      
+      if (allCards.length === 0) {
+        return { cards: [], message: "No cards due for review" };
+      }
+      
+      // Get detailed info for these cards
+      const cardInfo = await ankiConnect("cardsInfo", { cards: allCards });
+      
+      // Categorize by queue type
+      const categorized = {
+        learning: [],
+        review: [],
+        new: [],
+      };
+      
+      for (const card of cardInfo) {
+        if (card.queue === 1 || card.queue === 3) {
+          categorized.learning.push(card);
+        } else if (card.queue === 2) {
+          categorized.review.push(card);
+        } else if (card.queue === 0) {
+          categorized.new.push(card);
+        }
+      }
+      
+      return {
+        totalCards: allCards.length,
+        cards: cardInfo,
+        breakdown: {
+          learning: categorized.learning.length,
+          review: categorized.review.length,
+          new: categorized.new.length,
+        },
+        queueOrder: "Learning cards shown first, then reviews, then new cards"
+      };
+    },
   },
   
   cardsInfo: {
@@ -345,6 +414,74 @@ const tools: Record<string, ToolDef> = {
     description: "Get today's review count",
     schema: z.object({}),
     handler: async () => ankiConnect("getNumCardsReviewedToday"),
+  },
+  
+  getDueCardsDetailed: {
+    description: "Get due cards with detailed categorization by queue type (learning vs review)",
+    schema: z.object({
+      deck: z.string().describe("Deck name").optional(),
+    }),
+    handler: async ({ deck }) => {
+      // Query for different card states
+      const baseQuery = deck ? `deck:"${deck}"` : "";
+      
+      // Learning cards (queue 1 or 3, due soon)
+      const learningQuery = baseQuery ? `${baseQuery} (queue:1 OR queue:3)` : "(queue:1 OR queue:3)";
+      const learningCards = await ankiConnect("findCards", { query: learningQuery });
+      
+      // Review cards (queue 2, due today or overdue)
+      const reviewQuery = baseQuery ? `${baseQuery} is:due` : "is:due";
+      const reviewCards = await ankiConnect("findCards", { query: reviewQuery });
+      
+      // Get info for all cards
+      const allCardIds = [...learningCards, ...reviewCards];
+      if (allCardIds.length === 0) {
+        return { learning: [], review: [], total: 0 };
+      }
+      
+      const cardInfo = await ankiConnect("cardsInfo", { cards: allCardIds });
+      
+      // Separate by actual queue type
+      const learning = [];
+      const review = [];
+      
+      for (const card of cardInfo) {
+        // Queue meanings:
+        // 0 = new, 1 = learning, 2 = review, 3 = relearning
+        if (card.queue === 1 || card.queue === 3) {
+          learning.push({
+            cardId: card.cardId,
+            front: card.fields?.Front?.value || card.fields?.Simplified?.value || "N/A",
+            interval: card.interval,
+            due: card.due,
+            queue: card.queue === 1 ? "learning" : "relearning",
+            reps: card.reps,
+          });
+        } else if (card.queue === 2 && card.due <= Math.floor(Date.now() / 1000 / 86400)) {
+          review.push({
+            cardId: card.cardId,
+            front: card.fields?.Front?.value || card.fields?.Simplified?.value || "N/A",
+            interval: card.interval,
+            due: card.due,
+            queue: "review",
+            ease: card.factor,
+          });
+        }
+      }
+      
+      // Sort learning by due time (most urgent first)
+      learning.sort((a, b) => a.due - b.due);
+      
+      // Sort review by due date
+      review.sort((a, b) => a.due - b.due);
+      
+      return {
+        learning: learning,
+        review: review,
+        total: learning.length + review.length,
+        note: "Learning cards (including relearning) are shown before review cards in Anki"
+      };
+    },
   },
   
   getNumCardsReviewedByDay: {
