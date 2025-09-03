@@ -119,7 +119,7 @@ class TestMCPClient {
             }
             return response.result;
           }
-        } catch (e) {
+        } catch (_e) {
           // Continue parsing other lines
         }
       }
@@ -153,7 +153,7 @@ class TestMCPClient {
           if (response.id === request.id && response.result?.tools) {
             return response.result.tools;
           }
-        } catch (e) {
+        } catch (_e) {
           // Continue
         }
       }
@@ -170,7 +170,7 @@ class TestMCPClient {
 
 // Test utilities
 function parseResult(result: any): any {
-  if (!result?.content?.[0]?.text) return null;
+  if (!result?.content?.[0]?.text) {return null;}
   try {
     return JSON.parse(result.content[0].text);
   } catch {
@@ -188,7 +188,7 @@ interface TestCase {
   name: string;
   tool: string;
   args: any;
-  validate?: (result: any) => boolean;
+  validate?: (_result: any) => boolean;
   skipCleanup?: boolean;
   storeResult?: string;
 }
@@ -336,7 +336,7 @@ const testCategories: TestCategory[] = [
         tool: "notesInfo",
         args: {},
         validate: (r) => {
-          if (!testData.testNoteId) return false;
+          if (!testData.testNoteId) {return false;}
           const info = parseResult(r);
           return Array.isArray(info) && info.length > 0;
         }
@@ -346,7 +346,7 @@ const testCategories: TestCategory[] = [
         tool: "updateNote",
         args: {},
         validate: (r) => {
-          if (!testData.testNoteId) return false;
+          if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
           return result === null || result === undefined;
         }
@@ -356,7 +356,7 @@ const testCategories: TestCategory[] = [
         tool: "addTags",
         args: {},
         validate: (r) => {
-          if (!testData.testNoteId) return false;
+          if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
           return result === null || result === undefined;
         }
@@ -375,7 +375,7 @@ const testCategories: TestCategory[] = [
         tool: "removeTags",
         args: {},
         validate: (r) => {
-          if (!testData.testNoteId) return false;
+          if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
           return result === null || result === undefined;
         }
@@ -401,7 +401,7 @@ const testCategories: TestCategory[] = [
         tool: "cardsInfo",
         args: {},
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) return true;
+          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
           const info = parseResult(r);
           return Array.isArray(info);
         }
@@ -411,7 +411,7 @@ const testCategories: TestCategory[] = [
         tool: "getEaseFactors",
         args: {},
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) return true;
+          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
           const factors = parseResult(r);
           return Array.isArray(factors) || typeof factors === "object";
         }
@@ -421,7 +421,7 @@ const testCategories: TestCategory[] = [
         tool: "suspend",
         args: {},
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) return true;
+          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
           const result = parseResult(r);
           return result === true || result === null;
         }
@@ -431,7 +431,7 @@ const testCategories: TestCategory[] = [
         tool: "unsuspend",
         args: {},
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) return true;
+          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
           const result = parseResult(r);
           return result === true || result === null;
         }
@@ -492,7 +492,7 @@ const testCategories: TestCategory[] = [
         tool: "deleteMediaFile",
         args: {},
         validate: (r) => {
-          if (!testData.testMediaFile) return true;
+          if (!testData.testMediaFile) {return true;}
           const result = parseResult(r);
           return result === null || result === undefined;
         }
@@ -507,7 +507,7 @@ const testCategories: TestCategory[] = [
         tool: "deleteNotes",
         args: {},
         validate: (r) => {
-          if (!testData.testNoteId) return true;
+          if (!testData.testNoteId) {return true;}
           const result = parseResult(r);
           return result === null || result === undefined;
         }
@@ -550,14 +550,7 @@ async function runManualTests(debugMode = false) {
       const name = tool.name;
       let category = "Other";
       
-      if (name.includes("deck") || name.includes("Deck")) category = "Deck";
-      else if (name.includes("card") || name.includes("Card") || name.includes("suspend") || name.includes("ease")) category = "Card";
-      else if (name.includes("note") || name.includes("Note") || name.includes("tag") || name.includes("Tag")) category = "Note";
-      else if (name.includes("model") || name.includes("Model")) category = "Model";
-      else if (name.includes("media") || name.includes("Media")) category = "Media";
-      else if (name.includes("gui") || name.includes("Gui")) category = "GUI";
-      else if (name.includes("stat") || name.includes("Stat") || name.includes("review")) category = "Statistics";
-      else if (name.includes("sync") || name.includes("profile") || name.includes("export") || name.includes("import")) category = "System";
+      if (name.includes("deck") || name.includes("Deck")) {category = "Deck";} else if (name.includes("card") || name.includes("Card") || name.includes("suspend") || name.includes("ease")) {category = "Card";} else if (name.includes("note") || name.includes("Note") || name.includes("tag") || name.includes("Tag")) {category = "Note";} else if (name.includes("model") || name.includes("Model")) {category = "Model";} else if (name.includes("media") || name.includes("Media")) {category = "Media";} else if (name.includes("gui") || name.includes("Gui")) {category = "GUI";} else if (name.includes("stat") || name.includes("Stat") || name.includes("review")) {category = "Statistics";} else if (name.includes("sync") || name.includes("profile") || name.includes("export") || name.includes("import")) {category = "System";}
       
       if (!toolsByCategory.has(category)) {
         toolsByCategory.set(category, []);
@@ -682,7 +675,7 @@ async function runManualTests(debugMode = false) {
       }
       const stats = categoryStats.get(result.category)!;
       stats.total++;
-      if (result.passed) stats.passed++;
+      if (result.passed) {stats.passed++;}
     }
     
     for (const [category, stats] of categoryStats) {

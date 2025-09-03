@@ -79,7 +79,7 @@ async function testMCPServerDirect() {
   });
   
   let responseBuffer = "";
-  let responses: any[] = [];
+  const responses: any[] = [];
   
   // Handle server output
   serverProcess.stdout.on("data", (data: Buffer) => {
@@ -132,7 +132,7 @@ async function testMCPServerDirect() {
               }
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Not valid JSON, ignore
         }
       }

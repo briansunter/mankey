@@ -51,7 +51,7 @@ class TestClient {
             }
             return response.result;
           }
-        } catch (e) {}
+        } catch (_e) {}
       }
     }
     return null;

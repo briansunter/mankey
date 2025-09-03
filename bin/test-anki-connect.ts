@@ -31,7 +31,7 @@ async function testAnkiConnect(action: string, params?: any) {
       return null;
     }
 
-    const data = await response.json();
+    const data = await response.json() as { error?: string; result?: any };
 
     if (data.error) {
       console.error(`❌ Anki-Connect error: ${data.error}`);
@@ -40,10 +40,10 @@ async function testAnkiConnect(action: string, params?: any) {
 
     console.log(`✅ Success! Result:`, JSON.stringify(data.result, null, 2));
     return data.result;
-  } catch (error) {
+  } catch (_error) {
     console.error(`❌ Failed to connect to Anki-Connect at ${ANKI_CONNECT_URL}`);
     console.error(`   Make sure Anki is running with Anki-Connect plugin installed`);
-    console.error(`   Error: ${error}`);
+    console.error(`   Error: ${_error}`);
     return null;
   }
 }
@@ -81,7 +81,7 @@ async function runTests() {
   await testAnkiConnect("getProfiles");
 
   // Test 8: Test adding a note (dry run - check if we can)
-  const canAdd = await testAnkiConnect("canAddNotes", {
+  await testAnkiConnect("canAddNotes", {
     notes: [{
       deckName: "Default",
       modelName: "Basic",

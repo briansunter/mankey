@@ -23,8 +23,8 @@ async function ankiConnect(action: string, params = {}): Promise<any> {
       body: JSON.stringify({ action, version: ANKI_CONNECT_VERSION, params }),
     });
 
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
+    const data = await response.json() as { error?: string; result?: any };
+    if (data.error) {throw new Error(data.error);}
     return data.result;
   } catch (error: any) {
     throw new McpError(
@@ -49,9 +49,7 @@ function zodToJsonSchema(schema: z.ZodTypeAny): any {
     let items = undefined;
 
     // Determine type
-    if (field instanceof z.ZodNumber) type = "number";
-    else if (field instanceof z.ZodBoolean) type = "boolean";
-    else if (field instanceof z.ZodArray) {
+    if (field instanceof z.ZodNumber) {type = "number";} else if (field instanceof z.ZodBoolean) {type = "boolean";} else if (field instanceof z.ZodArray) {
       type = "array";
       items = { type: "string" }; // Simplified
     } else if (field instanceof z.ZodObject || field instanceof z.ZodRecord) {
@@ -59,11 +57,11 @@ function zodToJsonSchema(schema: z.ZodTypeAny): any {
     }
 
     properties[key] = { type };
-    if (items) properties[key].items = items;
+    if (items) {properties[key].items = items;}
     if ((field as any)._def?.description) {
       properties[key].description = (field as any)._def.description;
     }
-    if (!field.isOptional()) required.push(key);
+    if (!field.isOptional()) {required.push(key);}
   });
 
   return {
@@ -201,7 +199,7 @@ const tools: Record<string, ToolDef> = {
     }),
     handler: async ({ id, fields, tags }) => ankiConnect("updateNote", {
       note: { 
-        id: typeof id === 'string' ? parseInt(id, 10) : id,
+        id: typeof id === "string" ? parseInt(id, 10) : id,
         fields, 
         tags 
       }
@@ -214,7 +212,7 @@ const tools: Record<string, ToolDef> = {
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs to delete"),
     }),
     handler: async ({ notes }) => ankiConnect("deleteNotes", { 
-      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+      notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
     }),
   },
   
@@ -224,7 +222,7 @@ const tools: Record<string, ToolDef> = {
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs (automatically batched if >100)"),
     }),
     handler: async ({ notes }) => {
-      const noteIds = notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id);
+      const noteIds = notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id);
       
       // Batch process if more than 100 notes
       if (noteIds.length <= 100) {
@@ -265,7 +263,7 @@ const tools: Record<string, ToolDef> = {
       tags: z.string().describe("Space-separated tags"),
     }),
     handler: async ({ notes, tags }) => ankiConnect("addTags", { 
-      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+      notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
       tags 
     }),
   },
@@ -277,7 +275,7 @@ const tools: Record<string, ToolDef> = {
       tags: z.string().describe("Space-separated tags"),
     }),
     handler: async ({ notes, tags }) => ankiConnect("removeTags", { 
-      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+      notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
       tags 
     }),
   },
@@ -318,8 +316,8 @@ const tools: Record<string, ToolDef> = {
     }),
     handler: async ({ deck, limit, offset = 0 }) => {
       // Build deck prefix for queries
-      const deckPrefix = deck === 'current' ? 'deck:current' : 
-                        deck ? `deck:"${deck}"` : '';
+      const deckPrefix = deck === "current" ? "deck:current" : 
+                        deck ? `deck:"${deck}"` : "";
       
       // Get learning cards first (queue=1 or queue=3)
       const learningQuery = deckPrefix 
@@ -363,9 +361,9 @@ const tools: Record<string, ToolDef> = {
       
       // Categorize by queue type
       const categorized = {
-        learning: [],
-        review: [],
-        new: [],
+        learning: [] as any[],
+        review: [] as any[],
+        new: [] as any[],
       };
       
       for (const card of cardInfo) {
@@ -403,7 +401,7 @@ const tools: Record<string, ToolDef> = {
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs (automatically batched if >100)"),
     }),
     handler: async ({ cards }) => {
-      const cardIds = cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id);
+      const cardIds = cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id);
       
       // Batch process if more than 100 cards
       if (cardIds.length <= 100) {
@@ -437,7 +435,7 @@ const tools: Record<string, ToolDef> = {
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to suspend"),
     }),
     handler: async ({ cards }) => ankiConnect("suspend", { 
-      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
     }),
   },
   
@@ -447,7 +445,7 @@ const tools: Record<string, ToolDef> = {
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to unsuspend"),
     }),
     handler: async ({ cards }) => ankiConnect("unsuspend", { 
-      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
     }),
   },
   
@@ -457,7 +455,7 @@ const tools: Record<string, ToolDef> = {
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
     handler: async ({ cards }) => ankiConnect("getEaseFactors", { 
-      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
     }),
   },
   
@@ -469,7 +467,7 @@ const tools: Record<string, ToolDef> = {
     }),
     handler: async ({ cards, easeFactors }) => 
       ankiConnect("setEaseFactors", { 
-        cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+        cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
         easeFactors 
       }),
   },
@@ -526,7 +524,7 @@ const tools: Record<string, ToolDef> = {
     }),
     handler: async ({ deck }) => {
       // Query for different card states
-      const baseQuery = deck === 'current' ? 'deck:current' :
+      const baseQuery = deck === "current" ? "deck:current" :
                        deck ? `deck:"${deck}"` : "";
       
       // Learning cards (queue 1 or 3, due soon)

@@ -6,7 +6,6 @@
  * and verifying the server's tool definitions match the API capabilities
  */
 
-import { z } from "zod";
 
 const ANKI_CONNECT_URL = "http://127.0.0.1:8765";
 const ANKI_CONNECT_VERSION = 6;
@@ -35,15 +34,15 @@ async function ankiRequest(action: string, params?: any): Promise<any> {
       })
     });
 
-    const data = await response.json();
+    const data = await response.json() as { error?: string; result?: any };
     
     if (data.error) {
       throw new Error(data.error);
     }
     
     return data.result;
-  } catch (error) {
-    throw error;
+  } catch (_error) {
+    return Promise.reject(_error);
   }
 }
 
@@ -51,8 +50,8 @@ async function ankiRequest(action: string, params?: any): Promise<any> {
 function logTest(category: string, action: string, success: boolean, result?: any, error?: string) {
   const icon = success ? "✅" : "❌";
   console.log(`${icon} [${category}] ${action}`);
-  if (error) console.log(`   Error: ${error}`);
-  if (result && process.env.VERBOSE) console.log(`   Result: ${JSON.stringify(result).substring(0, 100)}...`);
+  if (error) {console.log(`   Error: ${error}`);}
+  if (result && process.env.VERBOSE) {console.log(`   Result: ${JSON.stringify(result).substring(0, 100)}...`);}
   
   testResults.push({ category, action, success, result, error: error || undefined });
 }
@@ -485,8 +484,8 @@ async function runAllTests() {
     // Exit code based on results
     process.exit(report.failed > 0 ? 1 : 0);
     
-  } catch (error) {
-    console.error("\n❌ FATAL ERROR:", error);
+  } catch (_error) {
+    console.error("\n❌ FATAL ERROR:", _error);
     console.error("Cannot connect to Anki-Connect. Please ensure:");
     console.error("1. Anki is running");
     console.error("2. Anki-Connect plugin is installed and enabled");

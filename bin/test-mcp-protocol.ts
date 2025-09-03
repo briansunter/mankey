@@ -6,7 +6,6 @@
  */
 
 import { spawn } from "child_process";
-import { Readable, Writable } from "stream";
 
 // MCP Protocol message types
 interface MCPRequest {
@@ -81,7 +80,7 @@ class MCPTestClient {
               this.responseHandlers.delete(response.id);
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Not JSON, might be other output
         }
       }
@@ -203,7 +202,7 @@ async function testListTools(client: MCPTestClient) {
       if (!categories[category]) {
         categories[category] = [];
       }
-      categories[category].push(tool.name);
+      categories[category]!.push(tool.name);
     }
     
     console.log("\n📊 Tools by Category:");
@@ -211,7 +210,7 @@ async function testListTools(client: MCPTestClient) {
       console.log(`   ${category}: ${tools.length} tools`);
       if (process.env.VERBOSE) {
         tools.slice(0, 3).forEach(t => console.log(`      - ${t}`));
-        if (tools.length > 3) console.log(`      ... and ${tools.length - 3} more`);
+        if (tools.length > 3) {console.log(`      ... and ${tools.length - 3} more`);}
       }
     }
     
@@ -239,11 +238,11 @@ async function testCallTool(client: MCPTestClient, toolName: string, args: any =
       if (content.type === "text") {
         try {
           const data = JSON.parse(content.text);
-          console.log(`   Result type: ${Array.isArray(data) ? 'array' : typeof data}`);
+          console.log(`   Result type: ${Array.isArray(data) ? "array" : typeof data}`);
           if (Array.isArray(data)) {
             console.log(`   Items: ${data.length}`);
-          } else if (typeof data === 'object') {
-            console.log(`   Keys: ${Object.keys(data).slice(0, 5).join(', ')}${Object.keys(data).length > 5 ? '...' : ''}`);
+          } else if (typeof data === "object") {
+            console.log(`   Keys: ${Object.keys(data).slice(0, 5).join(", ")}${Object.keys(data).length > 5 ? "..." : ""}`);
           } else {
             console.log(`   Value: ${JSON.stringify(data).substring(0, 100)}`);
           }
@@ -381,8 +380,7 @@ async function runMCPProtocolTests() {
     
     for (const tool of testTools) {
       const success = await testCallTool(client, tool.name, tool.args);
-      if (success) successCount++;
-      else failCount++;
+      if (success) {successCount++;} else {failCount++;}
     }
     
     // Test workflows
@@ -401,8 +399,8 @@ async function runMCPProtocolTests() {
     
     console.log("\n✅ MCP Protocol Tests Completed Successfully!");
     
-  } catch (error) {
-    console.error("\n❌ Fatal error:", error);
+  } catch (_error) {
+    console.error("\n❌ Fatal error:", _error);
   } finally {
     // Clean up
     await client.stop();

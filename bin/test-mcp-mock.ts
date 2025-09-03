@@ -16,7 +16,7 @@ async function testMCPServerStructure() {
   });
   
   let responseBuffer = "";
-  let responses: any[] = [];
+  const responses: any[] = [];
   let startupSuccess = false;
   
   // Handle server output
@@ -42,14 +42,7 @@ async function testMCPServerStructure() {
               let category = "Other";
               const name = tool.name.toLowerCase();
               
-              if (name.includes("deck")) category = "Deck";
-              else if (name.includes("card") || name.includes("suspend") || name.includes("ease")) category = "Card";
-              else if (name.includes("note") || name.includes("tag")) category = "Note";
-              else if (name.includes("model")) category = "Model";
-              else if (name.includes("media")) category = "Media";
-              else if (name.includes("gui")) category = "GUI";
-              else if (name.includes("stat") || name.includes("review")) category = "Statistics";
-              else if (name.includes("sync") || name.includes("profile")) category = "System";
+              if (name.includes("deck")) {category = "Deck";} else if (name.includes("card") || name.includes("suspend") || name.includes("ease")) {category = "Card";} else if (name.includes("note") || name.includes("tag")) {category = "Note";} else if (name.includes("model")) {category = "Model";} else if (name.includes("media")) {category = "Media";} else if (name.includes("gui")) {category = "GUI";} else if (name.includes("stat") || name.includes("review")) {category = "Statistics";} else if (name.includes("sync") || name.includes("profile")) {category = "System";}
               
               categories.set(category, (categories.get(category) || 0) + 1);
             }
@@ -67,7 +60,7 @@ async function testMCPServerStructure() {
               console.log(`   - ${tool.name}: ${hasSchema ? "✓ schema" : "no params"}`);
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Not valid JSON, check for startup message
         }
       }

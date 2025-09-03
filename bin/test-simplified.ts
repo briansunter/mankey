@@ -42,10 +42,10 @@ class SimplifiedTestClient {
         try {
           const response = JSON.parse(line);
           if (response.id === request.id) {
-            if (response.error) throw new Error(response.error.message);
+            if (response.error) {throw new Error(response.error.message);}
             return response.result;
           }
-        } catch (e) {}
+        } catch (_e) {}
       }
     }
     return null;

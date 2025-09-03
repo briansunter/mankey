@@ -58,7 +58,7 @@ class MCPClient {
             }
             return response.result;
           }
-        } catch (e) {
+        } catch (_e) {
           // Continue
         }
       }
@@ -215,8 +215,8 @@ async function testRealOperations() {
     console.log("   ✓ Delete notes");
     console.log("   ✓ Verify deletion");
     
-  } catch (error) {
-    console.error("\n❌ Error:", error);
+  } catch (_error) {
+    console.error("\n❌ Error:", _error);
   } finally {
     client.stop();
   }

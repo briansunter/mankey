@@ -83,23 +83,23 @@ async function testMCPServer() {
         });
         
         console.log(`   ✅ Success!`);
-        if (result.content && result.content.length > 0) {
+        if (result.content && Array.isArray(result.content) && result.content.length > 0) {
           const content = result.content[0];
           if (content.type === "text") {
             const data = JSON.parse(content.text);
             console.log(`   Result: ${JSON.stringify(data, null, 2).substring(0, 200)}...`);
           }
         }
-      } catch (error) {
-        console.log(`   ❌ Error: ${error}`);
+      } catch (_error) {
+        console.log(`   ❌ Error: ${_error}`);
       }
     }
 
     console.log("\n" + "=" .repeat(50));
     console.log("✅ MCP Server tests completed!");
 
-  } catch (error) {
-    console.error("❌ Failed to connect to MCP server:", error);
+  } catch (_error) {
+    console.error("❌ Failed to connect to MCP server:", _error);
   } finally {
     // Clean up
     await client.close();
@@ -126,10 +126,10 @@ async function testDirectly() {
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json() as { error?: string; result?: any };
       console.log("✅ Anki-Connect is running, version:", data.result);
     }
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Cannot connect to Anki-Connect");
     console.error("   Make sure Anki is running with Anki-Connect plugin");
     return;
@@ -159,8 +159,8 @@ async function testDirectly() {
     })
   });
 
-  const canAddData = await canAddResponse.json();
-  console.log("Can add test note:", canAddData.result?.[0] ? "✅ Yes" : "❌ No");
+  const canAddData = await canAddResponse.json() as { error?: string; result?: any };
+  console.log("Can add test note:", (canAddData as any).result?.[0] ? "✅ Yes" : "❌ No");
 
   console.log("\n✅ Direct testing completed!");
 }

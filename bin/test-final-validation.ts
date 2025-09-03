@@ -32,7 +32,7 @@ class SimpleMCPClient {
       this.responseBuffer += data.toString();
     });
     
-    this.process.stderr.on("data", (data: Buffer) => {
+    this.process.stderr.on("data", (_data: Buffer) => {
       // Ignore server startup messages
     });
     
@@ -63,7 +63,7 @@ class SimpleMCPClient {
             }
             return response.result;
           }
-        } catch (e) {
+        } catch (_e) {
           // Continue
         }
       }
@@ -93,7 +93,7 @@ class SimpleMCPClient {
           if (response.id === request.id && response.result?.tools) {
             return response.result.tools;
           }
-        } catch (e) {
+        } catch (_e) {
           // Continue
         }
       }
@@ -114,7 +114,7 @@ async function runTest(
   test: string,
   toolName: string,
   args: any,
-  validate?: (result: any) => boolean
+  validate?: (_result: any) => boolean
 ): Promise<void> {
   try {
     const result = await client.callTool(toolName, args);
@@ -339,7 +339,7 @@ async function validateMCPServer() {
       console.log("-" .repeat(30));
       for (const fail of failures) {
         console.log(`- [${fail.category}] ${fail.test}`);
-        if (fail.error) console.log(`  Error: ${fail.error}`);
+        if (fail.error) {console.log(`  Error: ${fail.error}`);}
       }
     }
     
