@@ -82,9 +82,28 @@ interface ToolDef {
 const tools: Record<string, ToolDef> = {
   // === DECK OPERATIONS ===
   deckNames: {
-    description: "List all deck names in your Anki collection",
-    schema: z.object({}),
-    handler: async () => ankiConnect("deckNames"),
+    description: "List all deck names in your Anki collection. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(1000).describe("Maximum decks to return (default 1000, max 10000)"),
+    }),
+    handler: async ({ offset = 0, limit = 1000 }) => {
+      const allDecks = await ankiConnect("deckNames");
+      const total = allDecks.length;
+      const effectiveLimit = Math.min(limit, 10000);
+      const paginatedDecks = allDecks.slice(offset, offset + effectiveLimit);
+      
+      return {
+        decks: paginatedDecks,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   createDeck: {
@@ -104,9 +123,29 @@ const tools: Record<string, ToolDef> = {
   },
   
   deckNamesAndIds: {
-    description: "Get deck names and their IDs",
-    schema: z.object({}),
-    handler: async () => ankiConnect("deckNamesAndIds"),
+    description: "Get deck names and their IDs. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(1000).describe("Maximum entries to return (default 1000, max 10000)"),
+    }),
+    handler: async ({ offset = 0, limit = 1000 }) => {
+      const allDecks = await ankiConnect("deckNamesAndIds");
+      const entries = Object.entries(allDecks);
+      const total = entries.length;
+      const effectiveLimit = Math.min(limit, 10000);
+      const paginatedEntries = entries.slice(offset, offset + effectiveLimit);
+      
+      return {
+        decks: Object.fromEntries(paginatedEntries),
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   getDeckConfig: {
@@ -251,9 +290,28 @@ const tools: Record<string, ToolDef> = {
   },
   
   getTags: {
-    description: "Get all tags in the collection",
-    schema: z.object({}),
-    handler: async () => ankiConnect("getTags"),
+    description: "Get all tags in the collection. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(1000).describe("Maximum tags to return (default 1000, max 10000)"),
+    }),
+    handler: async ({ offset = 0, limit = 1000 }) => {
+      const allTags = await ankiConnect("getTags");
+      const total = allTags.length;
+      const effectiveLimit = Math.min(limit, 10000);
+      const paginatedTags = allTags.slice(offset, offset + effectiveLimit);
+      
+      return {
+        tags: paginatedTags,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   addTags: {
@@ -474,9 +532,28 @@ const tools: Record<string, ToolDef> = {
   
   // === MODEL OPERATIONS ===
   modelNames: {
-    description: "List all note types",
-    schema: z.object({}),
-    handler: async () => ankiConnect("modelNames"),
+    description: "List all note types. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(1000).describe("Maximum models to return (default 1000, max 10000)"),
+    }),
+    handler: async ({ offset = 0, limit = 1000 }) => {
+      const allModels = await ankiConnect("modelNames");
+      const total = allModels.length;
+      const effectiveLimit = Math.min(limit, 10000);
+      const paginatedModels = allModels.slice(offset, offset + effectiveLimit);
+      
+      return {
+        models: paginatedModels,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   modelFieldNames: {
@@ -489,9 +566,29 @@ const tools: Record<string, ToolDef> = {
   },
   
   modelNamesAndIds: {
-    description: "Get model names and their IDs",
-    schema: z.object({}),
-    handler: async () => ankiConnect("modelNamesAndIds"),
+    description: "Get model names and their IDs. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(1000).describe("Maximum entries to return (default 1000, max 10000)"),
+    }),
+    handler: async ({ offset = 0, limit = 1000 }) => {
+      const allModels = await ankiConnect("modelNamesAndIds");
+      const entries = Object.entries(allModels);
+      const total = entries.length;
+      const effectiveLimit = Math.min(limit, 10000);
+      const paginatedEntries = entries.slice(offset, offset + effectiveLimit);
+      
+      return {
+        models: Object.fromEntries(paginatedEntries),
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   createModel: {
@@ -649,9 +746,28 @@ const tools: Record<string, ToolDef> = {
   },
   
   getProfiles: {
-    description: "Get list of profiles",
-    schema: z.object({}),
-    handler: async () => ankiConnect("getProfiles"),
+    description: "Get list of profiles. Returns paginated results",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum profiles to return (default 100, max 1000)"),
+    }),
+    handler: async ({ offset = 0, limit = 100 }) => {
+      const allProfiles = await ankiConnect("getProfiles");
+      const total = allProfiles.length;
+      const effectiveLimit = Math.min(limit, 1000);
+      const paginatedProfiles = allProfiles.slice(offset, offset + effectiveLimit);
+      
+      return {
+        profiles: paginatedProfiles,
+        pagination: {
+          offset,
+          limit: effectiveLimit,
+          total,
+          hasMore: offset + effectiveLimit < total,
+          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+        }
+      };
+    },
   },
   
   loadProfile: {
@@ -733,6 +849,504 @@ const tools: Record<string, ToolDef> = {
     description: "Exit Anki",
     schema: z.object({}),
     handler: async () => ankiConnect("guiExitAnki"),
+  },
+  
+  // === MISSING CRITICAL APIS ===
+  
+  // Card Operations
+  canAddNotes: {
+    description: "Check if notes can be added without actually adding them",
+    schema: z.object({
+      notes: z.array(z.object({
+        deckName: z.string(),
+        modelName: z.string(),
+        fields: z.record(z.string()),
+        tags: z.array(z.string()).optional(),
+      })).describe("Notes to check"),
+    }),
+    handler: async ({ notes }) => ankiConnect("canAddNotes", { notes }),
+  },
+  
+  areSuspended: {
+    description: "Check if cards are suspended",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to check"),
+    }),
+    handler: async ({ cards }) => ankiConnect("areSuspended", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  areDue: {
+    description: "Check if cards are due for review",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to check"),
+    }),
+    handler: async ({ cards }) => ankiConnect("areDue", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  getIntervals: {
+    description: "Get review intervals for cards",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+      complete: z.boolean().optional().describe("Return complete history"),
+    }),
+    handler: async ({ cards, complete }) => ankiConnect("getIntervals", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
+      complete
+    }),
+  },
+  
+  cardsToNotes: {
+    description: "Convert card IDs to note IDs",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+    }),
+    handler: async ({ cards }) => ankiConnect("cardsToNotes", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  cardsModTime: {
+    description: "Get modification times for cards (15x faster than cardsInfo)",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+    }),
+    handler: async ({ cards }) => ankiConnect("cardsModTime", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  answerCards: {
+    description: "Answer multiple cards programmatically",
+    schema: z.object({
+      answers: z.array(z.object({
+        cardId: z.union([z.number(), z.string()]),
+        ease: z.number().min(1).max(4).describe("1=Again, 2=Hard, 3=Good, 4=Easy"),
+      })).describe("Card answers"),
+    }),
+    handler: async ({ answers }) => ankiConnect("answerCards", { 
+      answers: answers.map((a: any) => ({
+        cardId: typeof a.cardId === "string" ? parseInt(a.cardId, 10) : a.cardId,
+        ease: a.ease
+      }))
+    }),
+  },
+  
+  forgetCards: {
+    description: "Reset cards to new state",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to reset"),
+    }),
+    handler: async ({ cards }) => ankiConnect("forgetCards", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  relearnCards: {
+    description: "Put cards into relearning queue",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+    }),
+    handler: async ({ cards }) => ankiConnect("relearnCards", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  setSpecificValueOfCard: {
+    description: "Set specific card values (use with caution)",
+    schema: z.object({
+      card: z.union([z.number(), z.string()]).describe("Card ID"),
+      keys: z.array(z.string()).describe("Field keys to update"),
+      newValues: z.array(z.string()).describe("New values for keys"),
+      warningCheck: z.boolean().optional().describe("Required for dangerous fields"),
+    }),
+    handler: async ({ card, keys, newValues, warningCheck }) => 
+      ankiConnect("setSpecificValueOfCard", { 
+        card: typeof card === "string" ? parseInt(card, 10) : card,
+        keys,
+        newValues,
+        warning_check: warningCheck
+      }),
+  },
+  
+  // Deck Operations
+  getDecks: {
+    description: "Get which decks cards belong to",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+    }),
+    handler: async ({ cards }) => ankiConnect("getDecks", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  changeDeck: {
+    description: "Move cards to a different deck",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to move"),
+      deck: z.string().describe("Target deck name"),
+    }),
+    handler: async ({ cards, deck }) => ankiConnect("changeDeck", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
+      deck
+    }),
+  },
+  
+  saveDeckConfig: {
+    description: "Save deck configuration",
+    schema: z.object({
+      config: z.record(z.any()).describe("Deck configuration object"),
+    }),
+    handler: async ({ config }) => ankiConnect("saveDeckConfig", { config }),
+  },
+  
+  setDeckConfigId: {
+    description: "Change deck configuration group",
+    schema: z.object({
+      decks: z.array(z.string()).describe("Deck names"),
+      configId: z.number().describe("Configuration ID"),
+    }),
+    handler: async ({ decks, configId }) => 
+      ankiConnect("setDeckConfigId", { decks, configId }),
+  },
+  
+  cloneDeckConfigId: {
+    description: "Clone deck configuration",
+    schema: z.object({
+      name: z.string().describe("New config name"),
+      cloneFrom: z.number().optional().describe("Config ID to clone from"),
+    }),
+    handler: async ({ name, cloneFrom }) => 
+      ankiConnect("cloneDeckConfigId", { name, cloneFrom }),
+  },
+  
+  removeDeckConfigId: {
+    description: "Remove deck configuration",
+    schema: z.object({
+      configId: z.number().describe("Configuration ID to remove"),
+    }),
+    handler: async ({ configId }) => 
+      ankiConnect("removeDeckConfigId", { configId }),
+  },
+  
+  // Model Operations
+  modelFieldsOnTemplates: {
+    description: "Get which fields are used in templates",
+    schema: z.object({
+      modelName: z.string().describe("Model name"),
+    }),
+    handler: async ({ modelName }) => 
+      ankiConnect("modelFieldsOnTemplates", { modelName }),
+  },
+  
+  modelTemplates: {
+    description: "Get card templates for a model",
+    schema: z.object({
+      modelName: z.string().describe("Model name"),
+    }),
+    handler: async ({ modelName }) => 
+      ankiConnect("modelTemplates", { modelName }),
+  },
+  
+  modelStyling: {
+    description: "Get CSS styling for a model",
+    schema: z.object({
+      modelName: z.string().describe("Model name"),
+    }),
+    handler: async ({ modelName }) => 
+      ankiConnect("modelStyling", { modelName }),
+  },
+  
+  updateModelTemplates: {
+    description: "Update model templates",
+    schema: z.object({
+      model: z.object({
+        name: z.string(),
+        templates: z.record(z.object({
+          Front: z.string(),
+          Back: z.string(),
+        })),
+      }),
+    }),
+    handler: async ({ model }) => 
+      ankiConnect("updateModelTemplates", { model }),
+  },
+  
+  updateModelStyling: {
+    description: "Update model CSS styling",
+    schema: z.object({
+      model: z.object({
+        name: z.string(),
+        css: z.string(),
+      }),
+    }),
+    handler: async ({ model }) => 
+      ankiConnect("updateModelStyling", { model }),
+  },
+  
+  // Note Operations
+  updateNoteFields: {
+    description: "Update only note fields (simpler than updateNote)",
+    schema: z.object({
+      note: z.object({
+        id: z.union([z.number(), z.string()]),
+        fields: z.record(z.string()),
+      }),
+    }),
+    handler: async ({ note }) => ankiConnect("updateNoteFields", { 
+      note: {
+        id: typeof note.id === "string" ? parseInt(note.id, 10) : note.id,
+        fields: note.fields
+      }
+    }),
+  },
+  
+  getNoteTags: {
+    description: "Get tags for specific notes",
+    schema: z.object({
+      note: z.union([z.number(), z.string()]).describe("Note ID"),
+    }),
+    handler: async ({ note }) => ankiConnect("getNoteTags", { 
+      note: typeof note === "string" ? parseInt(note, 10) : note
+    }),
+  },
+  
+  clearUnusedTags: {
+    description: "Remove tags not used by any notes",
+    schema: z.object({}),
+    handler: async () => ankiConnect("clearUnusedTags"),
+  },
+  
+  replaceTags: {
+    description: "Replace tags in specific notes",
+    schema: z.object({
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
+      tagToReplace: z.string().describe("Tag to replace"),
+      replaceWithTag: z.string().describe("Replacement tag"),
+    }),
+    handler: async ({ notes, tagToReplace, replaceWithTag }) => 
+      ankiConnect("replaceTags", { 
+        notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
+        tag_to_replace: tagToReplace,
+        replace_with_tag: replaceWithTag
+      }),
+  },
+  
+  replaceTagsInAllNotes: {
+    description: "Global tag replacement across all notes",
+    schema: z.object({
+      tagToReplace: z.string().describe("Tag to replace"),
+      replaceWithTag: z.string().describe("Replacement tag"),
+    }),
+    handler: async ({ tagToReplace, replaceWithTag }) => 
+      ankiConnect("replaceTagsInAllNotes", { 
+        tag_to_replace: tagToReplace,
+        replace_with_tag: replaceWithTag
+      }),
+  },
+  
+  removeEmptyNotes: {
+    description: "Delete notes with no cards",
+    schema: z.object({}),
+    handler: async () => ankiConnect("removeEmptyNotes"),
+  },
+  
+  notesModTime: {
+    description: "Get modification times for notes",
+    schema: z.object({
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
+    }),
+    handler: async ({ notes }) => ankiConnect("notesModTime", { 
+      notes: notes.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  // Statistics
+  cardReviews: {
+    description: "Get review history for cards",
+    schema: z.object({
+      deck: z.string().describe("Deck name"),
+      startID: z.number().optional().describe("Start review ID"),
+    }),
+    handler: async ({ deck, startID }) => 
+      ankiConnect("cardReviews", { deck, startID }),
+  },
+  
+  getLatestReviewID: {
+    description: "Get ID of most recent review",
+    schema: z.object({
+      deck: z.string().describe("Deck name"),
+    }),
+    handler: async ({ deck }) => 
+      ankiConnect("getLatestReviewID", { deck }),
+  },
+  
+  getReviewsOfCards: {
+    description: "Get reviews for specific cards",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+    }),
+    handler: async ({ cards }) => ankiConnect("getReviewsOfCards", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id)
+    }),
+  },
+  
+  // GUI Operations
+  guiSelectedNotes: {
+    description: "Get selected notes in browser",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiSelectedNotes"),
+  },
+  
+  guiSelectCard: {
+    description: "Select a card in the browser",
+    schema: z.object({
+      card: z.union([z.number(), z.string()]).describe("Card ID"),
+    }),
+    handler: async ({ card }) => ankiConnect("guiSelectCard", { 
+      card: typeof card === "string" ? parseInt(card, 10) : card
+    }),
+  },
+  
+  guiEditNote: {
+    description: "Open edit dialog for note",
+    schema: z.object({
+      note: z.union([z.number(), z.string()]).describe("Note ID"),
+    }),
+    handler: async ({ note }) => ankiConnect("guiEditNote", { 
+      note: typeof note === "string" ? parseInt(note, 10) : note
+    }),
+  },
+  
+  guiStartCardTimer: {
+    description: "Start timer for current card",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiStartCardTimer"),
+  },
+  
+  guiShowQuestion: {
+    description: "Show question side of current card",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiShowQuestion"),
+  },
+  
+  guiShowAnswer: {
+    description: "Show answer side of current card",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiShowAnswer"),
+  },
+  
+  guiUndo: {
+    description: "Undo last action",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiUndo"),
+  },
+  
+  guiDeckBrowser: {
+    description: "Open deck browser",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiDeckBrowser"),
+  },
+  
+  guiDeckReview: {
+    description: "Start deck review",
+    schema: z.object({
+      name: z.string().describe("Deck name"),
+    }),
+    handler: async ({ name }) => ankiConnect("guiDeckReview", { name }),
+  },
+  
+  guiCheckDatabase: {
+    description: "Check database integrity",
+    schema: z.object({}),
+    handler: async () => ankiConnect("guiCheckDatabase"),
+  },
+  
+  guiImportFile: {
+    description: "Import file dialog",
+    schema: z.object({
+      path: z.string().optional().describe("File path to import"),
+    }),
+    handler: async ({ path }) => ankiConnect("guiImportFile", { path }),
+  },
+  
+  // Media Operations
+  getMediaDirPath: {
+    description: "Get path to media folder",
+    schema: z.object({}),
+    handler: async () => ankiConnect("getMediaDirPath"),
+  },
+  
+  // System Operations
+  version: {
+    description: "Get Anki-Connect version",
+    schema: z.object({}),
+    handler: async () => ankiConnect("version"),
+  },
+  
+  requestPermission: {
+    description: "Request API permission",
+    schema: z.object({}),
+    handler: async () => ankiConnect("requestPermission"),
+  },
+  
+  apiReflect: {
+    description: "Get information about available API actions",
+    schema: z.object({
+      scopes: z.array(z.string()).optional().describe("Scopes to query"),
+      actions: z.array(z.string()).optional().describe("Actions to check"),
+    }),
+    handler: async ({ scopes, actions }) => 
+      ankiConnect("apiReflect", { scopes, actions }),
+  },
+  
+  reloadCollection: {
+    description: "Reload database from disk",
+    schema: z.object({}),
+    handler: async () => ankiConnect("reloadCollection"),
+  },
+  
+  multi: {
+    description: "Execute multiple actions in one request",
+    schema: z.object({
+      actions: z.array(z.object({
+        action: z.string(),
+        params: z.any().optional(),
+        version: z.number().optional(),
+      })).describe("Actions to execute"),
+    }),
+    handler: async ({ actions }) => ankiConnect("multi", { actions }),
+  },
+  
+  getActiveProfile: {
+    description: "Get currently active profile",
+    schema: z.object({}),
+    handler: async () => ankiConnect("getActiveProfile"),
+  },
+  
+  setDueDate: {
+    description: "Set due date for cards",
+    schema: z.object({
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+      days: z.string().describe("Days string (e.g., '1', '3-7', '0' for today)"),
+    }),
+    handler: async ({ cards, days }) => ankiConnect("setDueDate", { 
+      cards: cards.map((id: string | number) => typeof id === "string" ? parseInt(id, 10) : id),
+      days
+    }),
+  },
+  
+  suspended: {
+    description: "Check if a single card is suspended",
+    schema: z.object({
+      card: z.union([z.number(), z.string()]).describe("Card ID"),
+    }),
+    handler: async ({ card }) => ankiConnect("suspended", { 
+      card: typeof card === "string" ? parseInt(card, 10) : card
+    }),
   },
 };
 
