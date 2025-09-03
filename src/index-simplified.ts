@@ -105,20 +105,6 @@ const tools: Record<string, ToolDef> = {
     handler: async ({ decks }) => ankiConnect("getDeckStats", { decks }),
   },
   
-  deckNamesAndIds: {
-    description: "Get deck names and their IDs",
-    schema: z.object({}),
-    handler: async () => ankiConnect("deckNamesAndIds"),
-  },
-  
-  getDeckConfig: {
-    description: "Get configuration for a deck",
-    schema: z.object({
-      deck: z.string().describe("Deck name"),
-    }),
-    handler: async ({ deck }) => ankiConnect("getDeckConfig", { deck }),
-  },
-  
   deleteDecks: {
     description: "Delete decks and optionally their cards",
     schema: z.object({
@@ -130,22 +116,6 @@ const tools: Record<string, ToolDef> = {
   },
   
   // === NOTE OPERATIONS ===
-  addNotes: {
-    description: "Bulk create multiple notes",
-    schema: z.object({
-      notes: z.array(z.object({
-        deckName: z.string(),
-        modelName: z.string(),
-        fields: z.record(z.string()),
-        tags: z.array(z.string()).optional(),
-        options: z.object({
-          allowDuplicate: z.boolean().optional(),
-        }).optional(),
-      })),
-    }),
-    handler: async ({ notes }) => ankiConnect("addNotes", { notes }),
-  },
-  
   addNote: {
     description: "Create a new flashcard note",
     schema: z.object({
@@ -293,48 +263,11 @@ const tools: Record<string, ToolDef> = {
       ankiConnect("modelFieldNames", { modelName }),
   },
   
-  modelNamesAndIds: {
-    description: "Get model names and their IDs",
-    schema: z.object({}),
-    handler: async () => ankiConnect("modelNamesAndIds"),
-  },
-  
-  createModel: {
-    description: "Create a custom note type",
-    schema: z.object({
-      modelName: z.string().describe("Model name"),
-      inOrderFields: z.array(z.string()).describe("Field names"),
-      css: z.string().optional().describe("Card CSS"),
-      isCloze: z.boolean().optional(),
-      cardTemplates: z.array(z.object({
-        Name: z.string().optional(),
-        Front: z.string(),
-        Back: z.string(),
-      })),
-    }),
-    handler: async (args) => ankiConnect("createModel", args),
-  },
-  
   // === STATISTICS ===
   getNumCardsReviewedToday: {
     description: "Get today's review count",
     schema: z.object({}),
     handler: async () => ankiConnect("getNumCardsReviewedToday"),
-  },
-  
-  getNumCardsReviewedByDay: {
-    description: "Get review counts by day",
-    schema: z.object({}),
-    handler: async () => ankiConnect("getNumCardsReviewedByDay"),
-  },
-  
-  getCollectionStatsHTML: {
-    description: "Get collection statistics as HTML",
-    schema: z.object({
-      wholeCollection: z.boolean().optional().default(true),
-    }),
-    handler: async ({ wholeCollection }) => 
-      ankiConnect("getCollectionStatsHTML", { wholeCollection }),
   },
   
   // === MEDIA ===
@@ -344,131 +277,15 @@ const tools: Record<string, ToolDef> = {
       filename: z.string().describe("File name"),
       data: z.string().optional().describe("Base64 data"),
       url: z.string().optional().describe("URL to download"),
-      path: z.string().optional().describe("File path"),
-      deleteExisting: z.boolean().optional().default(true),
     }),
     handler: async (args) => ankiConnect("storeMediaFile", args),
   },
   
-  retrieveMediaFile: {
-    description: "Retrieve a media file",
-    schema: z.object({
-      filename: z.string().describe("File name"),
-    }),
-    handler: async ({ filename }) => 
-      ankiConnect("retrieveMediaFile", { filename }),
-  },
-  
-  getMediaFilesNames: {
-    description: "Get media file names",
-    schema: z.object({
-      pattern: z.string().optional().describe("File pattern"),
-    }),
-    handler: async ({ pattern }) => 
-      ankiConnect("getMediaFilesNames", { pattern }),
-  },
-  
-  deleteMediaFile: {
-    description: "Delete a media file",
-    schema: z.object({
-      filename: z.string().describe("File name"),
-    }),
-    handler: async ({ filename }) => 
-      ankiConnect("deleteMediaFile", { filename }),
-  },
-  
-  // === MISCELLANEOUS ===
+  // === SYNC ===
   sync: {
     description: "Sync with AnkiWeb",
     schema: z.object({}),
     handler: async () => ankiConnect("sync"),
-  },
-  
-  getProfiles: {
-    description: "Get list of profiles",
-    schema: z.object({}),
-    handler: async () => ankiConnect("getProfiles"),
-  },
-  
-  loadProfile: {
-    description: "Load a profile",
-    schema: z.object({
-      name: z.string().describe("Profile name"),
-    }),
-    handler: async ({ name }) => ankiConnect("loadProfile", { name }),
-  },
-  
-  exportPackage: {
-    description: "Export deck as .apkg file",
-    schema: z.object({
-      deck: z.string().describe("Deck name"),
-      path: z.string().describe("Export path"),
-      includeSched: z.boolean().optional().default(false),
-    }),
-    handler: async ({ deck, path, includeSched }) => 
-      ankiConnect("exportPackage", { deck, path, includeSched }),
-  },
-  
-  importPackage: {
-    description: "Import .apkg file",
-    schema: z.object({
-      path: z.string().describe("Import path"),
-    }),
-    handler: async ({ path }) => ankiConnect("importPackage", { path }),
-  },
-  
-  // === GUI OPERATIONS ===
-  guiBrowse: {
-    description: "Open card browser",
-    schema: z.object({
-      query: z.string().describe("Search query"),
-      reorderCards: z.object({
-        order: z.enum(["ascending", "descending"]).optional(),
-        columnId: z.string().optional(),
-      }).optional(),
-    }),
-    handler: async (args) => ankiConnect("guiBrowse", args),
-  },
-  
-  guiAddCards: {
-    description: "Open Add Cards dialog",
-    schema: z.object({
-      note: z.object({
-        deckName: z.string(),
-        modelName: z.string(),
-        fields: z.record(z.string()),
-        tags: z.array(z.string()).optional(),
-      }),
-    }),
-    handler: async ({ note }) => ankiConnect("guiAddCards", { note }),
-  },
-  
-  guiCurrentCard: {
-    description: "Get current review card",
-    schema: z.object({}),
-    handler: async () => ankiConnect("guiCurrentCard"),
-  },
-  
-  guiAnswerCard: {
-    description: "Answer current card",
-    schema: z.object({
-      ease: z.number().min(1).max(4).describe("1=Again, 2=Hard, 3=Good, 4=Easy"),
-    }),
-    handler: async ({ ease }) => ankiConnect("guiAnswerCard", { ease }),
-  },
-  
-  guiDeckOverview: {
-    description: "Show deck overview",
-    schema: z.object({
-      name: z.string().describe("Deck name"),
-    }),
-    handler: async ({ name }) => ankiConnect("guiDeckOverview", { name }),
-  },
-  
-  guiExitAnki: {
-    description: "Exit Anki",
-    schema: z.object({}),
-    handler: async () => ankiConnect("guiExitAnki"),
   },
 };
 
@@ -516,7 +333,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Anki MCP server running on stdio");
+  console.error("Anki MCP server (simplified) running");
   console.error(`Connected to Anki-Connect at ${ANKI_CONNECT_URL}`);
 }
 
