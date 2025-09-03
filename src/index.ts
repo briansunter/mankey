@@ -80,7 +80,7 @@ interface ToolDef {
   handler: (args: any) => Promise<any>;
 }
 
-// Define all tools in a cleaner way
+// Define all tools
 const tools: Record<string, ToolDef> = {
   // === DECK OPERATIONS ===
   deckNames: {
@@ -177,29 +177,37 @@ const tools: Record<string, ToolDef> = {
   updateNote: {
     description: "Update an existing note's fields or tags",
     schema: z.object({
-      id: z.number().describe("Note ID"),
+      id: z.union([z.number(), z.string()]).describe("Note ID"),
       fields: z.record(z.string()).optional().describe("Fields to update"),
       tags: z.array(z.string()).optional().describe("New tags"),
     }),
     handler: async ({ id, fields, tags }) => ankiConnect("updateNote", {
-      note: { id, fields, tags }
+      note: { 
+        id: typeof id === 'string' ? parseInt(id, 10) : id,
+        fields, 
+        tags 
+      }
     }),
   },
   
   deleteNotes: {
     description: "Delete notes by ID",
     schema: z.object({
-      notes: z.array(z.number()).describe("Note IDs to delete"),
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs to delete"),
     }),
-    handler: async ({ notes }) => ankiConnect("deleteNotes", { notes }),
+    handler: async ({ notes }) => ankiConnect("deleteNotes", { 
+      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   notesInfo: {
     description: "Get detailed information about notes",
     schema: z.object({
-      notes: z.array(z.number()).describe("Note IDs"),
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
     }),
-    handler: async ({ notes }) => ankiConnect("notesInfo", { notes }),
+    handler: async ({ notes }) => ankiConnect("notesInfo", { 
+      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   getTags: {
@@ -211,19 +219,25 @@ const tools: Record<string, ToolDef> = {
   addTags: {
     description: "Add tags to notes",
     schema: z.object({
-      notes: z.array(z.number()).describe("Note IDs"),
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
       tags: z.string().describe("Space-separated tags"),
     }),
-    handler: async ({ notes, tags }) => ankiConnect("addTags", { notes, tags }),
+    handler: async ({ notes, tags }) => ankiConnect("addTags", { 
+      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+      tags 
+    }),
   },
   
   removeTags: {
     description: "Remove tags from notes",
     schema: z.object({
-      notes: z.array(z.number()).describe("Note IDs"),
+      notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
       tags: z.string().describe("Space-separated tags"),
     }),
-    handler: async ({ notes, tags }) => ankiConnect("removeTags", { notes, tags }),
+    handler: async ({ notes, tags }) => ankiConnect("removeTags", { 
+      notes: notes.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+      tags 
+    }),
   },
   
   // === CARD OPERATIONS ===
@@ -238,43 +252,54 @@ const tools: Record<string, ToolDef> = {
   cardsInfo: {
     description: "Get detailed card information",
     schema: z.object({
-      cards: z.array(z.number()).describe("Card IDs"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
-    handler: async ({ cards }) => ankiConnect("cardsInfo", { cards }),
+    handler: async ({ cards }) => ankiConnect("cardsInfo", { 
+      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   suspend: {
     description: "Suspend cards from review",
     schema: z.object({
-      cards: z.array(z.number()).describe("Card IDs to suspend"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to suspend"),
     }),
-    handler: async ({ cards }) => ankiConnect("suspend", { cards }),
+    handler: async ({ cards }) => ankiConnect("suspend", { 
+      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   unsuspend: {
     description: "Unsuspend cards for review",
     schema: z.object({
-      cards: z.array(z.number()).describe("Card IDs to unsuspend"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to unsuspend"),
     }),
-    handler: async ({ cards }) => ankiConnect("unsuspend", { cards }),
+    handler: async ({ cards }) => ankiConnect("unsuspend", { 
+      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   getEaseFactors: {
     description: "Get ease factors for cards",
     schema: z.object({
-      cards: z.array(z.number()).describe("Card IDs"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
-    handler: async ({ cards }) => ankiConnect("getEaseFactors", { cards }),
+    handler: async ({ cards }) => ankiConnect("getEaseFactors", { 
+      cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id)
+    }),
   },
   
   setEaseFactors: {
     description: "Set ease factors for cards",
     schema: z.object({
-      cards: z.array(z.number()).describe("Card IDs"),
+      cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
       easeFactors: z.array(z.number()).describe("Ease factors (1.3-2.5)"),
     }),
     handler: async ({ cards, easeFactors }) => 
-      ankiConnect("setEaseFactors", { cards, easeFactors }),
+      ankiConnect("setEaseFactors", { 
+        cards: cards.map((id: string | number) => typeof id === 'string' ? parseInt(id, 10) : id),
+        easeFactors 
+      }),
   },
   
   // === MODEL OPERATIONS ===
