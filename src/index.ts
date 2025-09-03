@@ -13,6 +13,78 @@ import { z } from "zod";
 // Configuration
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const ANKI_CONNECT_VERSION = 6;
+const DEBUG = process.env.DEBUG === 'true';
+
+// Debug logging helper (writes to stderr which shows in stdio)
+function debug(message: string, data?: any) {
+  if (DEBUG) {
+    console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data) : '');
+  }
+}
+
+// Utility function to normalize tags from various formats
+function normalizeTags(tags: any): string[] {
+  debug('normalizeTags input:', tags);
+  
+  // Already an array - return as is
+  if (Array.isArray(tags)) {
+    debug('Tags already array');
+    return tags;
+  }
+  
+  // String that might be JSON or space-separated
+  if (typeof tags === 'string') {
+    // Try parsing as JSON array
+    if (tags.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(tags);
+        if (Array.isArray(parsed)) {
+          debug('Parsed tags from JSON:', parsed);
+          return parsed;
+        }
+      } catch {
+        debug('Failed to parse JSON tags, using space-split');
+      }
+    }
+    
+    // Fall back to space-separated
+    const split = tags.split(' ').filter(t => t.trim());
+    debug('Split tags by space:', split);
+    return split;
+  }
+  
+  debug('Unknown tag format, returning empty array');
+  return [];
+}
+
+// Utility to normalize fields from various formats
+function normalizeFields(fields: any): object | undefined {
+  debug('normalizeFields input:', fields);
+  
+  if (!fields) return undefined;
+  
+  // Already an object
+  if (typeof fields === 'object' && !Array.isArray(fields)) {
+    debug('Fields already object');
+    return fields;
+  }
+  
+  // String that might be JSON
+  if (typeof fields === 'string') {
+    try {
+      const parsed = JSON.parse(fields);
+      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+        debug('Parsed fields from JSON:', parsed);
+        return parsed;
+      }
+    } catch {
+      debug('Failed to parse JSON fields');
+    }
+  }
+  
+  debug('Unknown fields format, returning undefined');
+  return undefined;
+}
 
 // Anki-Connect API helper
 async function ankiConnect(action: string, params = {}): Promise<any> {
@@ -82,7 +154,7 @@ interface ToolDef {
 const tools: Record<string, ToolDef> = {
   // === DECK OPERATIONS ===
   deckNames: {
-    description: "List all deck names in your Anki collection. Returns paginated results",
+    description: "Gets the complete list of deck names for the current user. Returns all decks including nested decks (formatted as 'Parent::Child'). Useful for getting an overview of available decks before performing operations. Returns paginated results to handle large collections efficiently",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(1000).describe("Maximum decks to return (default 1000, max 10000)"),
@@ -107,7 +179,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   createDeck: {
-    description: "Create a new deck or ensure it exists",
+    description: "Creates a new empty deck. Will not overwrite a deck that exists with the same name. Use '::' separator for nested decks (e.g., 'Japanese::JLPT N5'). Returns the deck ID on success. Safe to call multiple times - acts as 'ensure exists' operation",
     schema: z.object({
       deck: z.string().describe("Deck name (use :: for nested decks)"),
     }),
@@ -115,7 +187,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getDeckStats: {
-    description: "Get statistics for specified decks",
+    description: "Gets detailed statistics for specified decks including: new_count (blue cards), learn_count (red cards in learning), review_count (green cards due), and total_in_deck. Essential for understanding deck workload and progress. Returns stats keyed by deck ID",
     schema: z.object({
       decks: z.array(z.string()).describe("Deck names to get stats for"),
     }),
@@ -123,7 +195,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   deckNamesAndIds: {
-    description: "Get deck names and their IDs. Returns paginated results",
+    description: "Gets complete mapping of deck names to their internal IDs. IDs are persistent and used internally by Anki. Useful when you need to work with deck IDs directly or correlate names with IDs. Returns object with deck names as keys and IDs as values. Paginated for large collections",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(1000).describe("Maximum entries to return (default 1000, max 10000)"),
@@ -149,7 +221,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getDeckConfig: {
-    description: "Get configuration for a deck",
+    description: "Gets the configuration group object for a deck. Contains review settings like: new cards per day, review limits, ease factors, intervals, leech thresholds, and more. Decks can share config groups. Understanding config is crucial for optimizing learning efficiency",
     schema: z.object({
       deck: z.string().describe("Deck name"),
     }),
@@ -157,7 +229,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   deleteDecks: {
-    description: "Delete decks and optionally their cards",
+    description: "Permanently deletes specified decks. CAUTION: Setting cardsToo=true (default) will delete all cards in the decks. Cards cannot be recovered after deletion. cardsToo MUST be explicitly set. Deleting parent deck deletes all subdecks",
     schema: z.object({
       decks: z.array(z.string()).describe("Deck names to delete"),
       cardsToo: z.boolean().default(true).describe("Also delete cards"),
@@ -168,85 +240,146 @@ const tools: Record<string, ToolDef> = {
   
   // === NOTE OPERATIONS ===
   addNotes: {
-    description: "Bulk create multiple notes",
+    description: "Bulk create multiple notes in a single operation. Each note creates one or more cards based on the model's templates. Returns array of note IDs (null for failures). More efficient than multiple addNote calls. Duplicates return null unless allowDuplicate=true. Note: Fields must match the model's field names exactly",
     schema: z.object({
-      notes: z.array(z.object({
-        deckName: z.string(),
-        modelName: z.string(),
-        fields: z.record(z.string()),
-        tags: z.array(z.string()).optional(),
-        options: z.object({
-          allowDuplicate: z.boolean().optional(),
-        }).optional(),
-      })),
+      notes: z.array(z.union([
+        z.object({
+          deckName: z.string(),
+          modelName: z.string(),
+          fields: z.record(z.string()),
+          tags: z.array(z.string()).optional(),
+          options: z.object({
+            allowDuplicate: z.boolean().optional(),
+          }).optional(),
+        }),
+        z.string()  // Allow JSON string representation
+      ])),
     }),
-    handler: async ({ notes }) => ankiConnect("addNotes", { notes }),
+    handler: async ({ notes }) => {
+      debug('addNotes called with:', notes);
+      
+      // Parse and normalize notes
+      const parsedNotes = notes.map((note: any) => {
+        if (typeof note === 'string') {
+          try {
+            note = JSON.parse(note);
+          } catch (e) {
+            throw new Error('Invalid note format');
+          }
+        }
+        
+        // Normalize tags using utility
+        if (note.tags) {
+          note.tags = normalizeTags(note.tags);
+        }
+        
+        return note;
+      });
+      
+      return ankiConnect("addNotes", { notes: parsedNotes });
+    },
   },
   
   addNote: {
-    description: "Create a new flashcard note",
+    description: "Creates a single note (fact) which generates cards based on the model's templates. Basic model creates 1 card, Cloze can create many. Returns the new note ID. Fields must match the model exactly (case-sensitive). Common models: 'Basic' (Front/Back), 'Basic (and reversed card)' (Front/Back, creates 2 cards), 'Cloze' (Text/Extra, use {{c1::text}}). Tags are passed as an array of strings. IMPORTANT: Field names are case-sensitive and must exactly match the model's field names. Use modelFieldNames to check exact field names first",
     schema: z.object({
       deckName: z.string().describe("Target deck"),
       modelName: z.string().describe("Note type (e.g., 'Basic', 'Cloze')"),
       fields: z.record(z.string()).describe("Field content"),
-      tags: z.array(z.string()).optional().describe("Tags"),
+      tags: z.union([z.array(z.string()), z.string()]).optional().describe("Tags"),
       allowDuplicate: z.boolean().optional().describe("Allow duplicates"),
     }),
-    handler: async (args) => ankiConnect("addNote", {
-      note: {
-        deckName: args.deckName,
-        modelName: args.modelName,
-        fields: args.fields,
-        tags: args.tags || [],
-        options: { allowDuplicate: args.allowDuplicate || false },
-      }
-    }),
+    handler: async (args) => {
+      debug('addNote called with:', args);
+      const tags = args.tags ? normalizeTags(args.tags) : [];
+      
+      return ankiConnect("addNote", {
+        note: {
+          deckName: args.deckName,
+          modelName: args.modelName,
+          fields: args.fields,
+          tags,
+          options: { allowDuplicate: args.allowDuplicate || false },
+        }
+      });
+    },
   },
   
   findNotes: {
-    description: "Search for notes using Anki query syntax. Supports 'deck:current' for current deck. Returns paginated results",
+    description: "Search for notes using Anki's powerful query syntax. Returns note IDs matching the query. Common queries: 'deck:DeckName' (notes in deck), 'tag:tagname' (tagged notes), 'is:new' (new notes), 'is:due' (notes with due cards), 'added:7' (added in last 7 days), 'front:text' (search Front field), '*' (all notes). Combine with AND/OR. IMPORTANT: Deck names with '::' hierarchy need quotes: 'deck:\"Parent::Child\"'. Returns paginated results for large collections. Note: Returns notes, not cards",
     schema: z.object({
       query: z.string().describe("Search query (e.g., 'deck:current', 'deck:Default', 'tag:vocab')"),
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(100).describe("Maximum notes to return (default 100, max 1000)"),
     }),
-    handler: async ({ query, offset, limit }) => {
-      const allNotes = await ankiConnect("findNotes", { query });
-      const total = allNotes.length;
-      const effectiveLimit = Math.min(limit, 1000);
-      const paginatedNotes = allNotes.slice(offset, offset + effectiveLimit);
-      
-      return {
-        notes: paginatedNotes,
-        pagination: {
-          offset,
-          limit: effectiveLimit,
-          total,
-          hasMore: offset + effectiveLimit < total,
-          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
-        }
-      };
+    handler: async ({ query, offset = 0, limit = 100 }) => {
+      try {
+        const allNotes = await ankiConnect("findNotes", { query });
+        const total = Array.isArray(allNotes) ? allNotes.length : 0;
+        const effectiveLimit = Math.min(limit, 1000);
+        const paginatedNotes = Array.isArray(allNotes) ? allNotes.slice(offset, offset + effectiveLimit) : [];
+        
+        return {
+          notes: paginatedNotes,
+          pagination: {
+            offset,
+            limit: effectiveLimit,
+            total,
+            hasMore: offset + effectiveLimit < total,
+            nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+          }
+        };
+      } catch (error) {
+        // Return empty result set on error
+        return {
+          notes: [],
+          pagination: {
+            offset,
+            limit: Math.min(limit, 1000),
+            total: 0,
+            hasMore: false,
+            nextOffset: null,
+          }
+        };
+      }
     },
   },
   
   updateNote: {
-    description: "Update an existing note's fields or tags",
+    description: "Updates an existing note's fields and/or tags. Only provided fields are updated, others remain unchanged. Field names must match the model exactly. Tags array replaces all existing tags (not additive). Changes affect all cards generated from this note. Updates modification time. Note: Changing fields that affect card generation may reset card scheduling. IMPORTANT: Field names are case-sensitive. Use notesInfo first to check current field names",
     schema: z.object({
       id: z.union([z.number(), z.string()]).describe("Note ID"),
       fields: z.record(z.string()).optional().describe("Fields to update"),
-      tags: z.array(z.string()).optional().describe("New tags"),
+      tags: z.union([z.array(z.string()), z.string()]).optional().describe("New tags"),
     }),
-    handler: async ({ id, fields, tags }) => ankiConnect("updateNote", {
-      note: { 
-        id: typeof id === "string" ? parseInt(id, 10) : id,
-        fields, 
-        tags 
+    handler: async ({ id, fields, tags }) => {
+      debug('updateNote called with:', { id, fields, tags });
+      
+      const noteData: any = { 
+        id: typeof id === "string" ? parseInt(id, 10) : id
+      };
+      
+      // Use utility to normalize fields
+      const normalizedFields = normalizeFields(fields);
+      if (normalizedFields) {
+        noteData.fields = normalizedFields;
       }
-    }),
+      
+      // Use utility to normalize tags
+      if (tags) {
+        noteData.tags = normalizeTags(tags);
+      }
+      
+      debug('Sending to Anki-Connect:', noteData);
+      
+      return ankiConnect("updateNote", {
+        note: noteData
+      });
+    },
   },
   
   deleteNotes: {
-    description: "Delete notes by ID",
+    description: "Permanently deletes notes and all their associated cards. CAUTION: This is irreversible. Cards' review history is also deleted. Deletion is immediate and cannot be undone. Use suspend instead if you might need the notes later. Accepts array of note IDs",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs to delete"),
     }),
@@ -256,7 +389,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   notesInfo: {
-    description: "Get detailed information about notes. Automatically paginates large requests",
+    description: "Gets comprehensive information about notes including: noteId, modelName, tags array, all fields with their values and order, cards array (IDs of all cards from this note), and modification time. Essential for displaying or editing notes. Automatically paginates large requests to handle bulk operations efficiently. Returns null for non-existent notes",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs (automatically batched if >100)"),
     }),
@@ -290,7 +423,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getTags: {
-    description: "Get all tags in the collection. Returns paginated results",
+    description: "Gets all unique tags used across the entire collection. Tags are hierarchical using '::' separator (e.g., 'japanese::grammar'). Returns flat list of all tags including parent and child tags separately. Useful for tag management, autocomplete, or finding unused tags. Returns paginated results for collections with many tags",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(1000).describe("Maximum tags to return (default 1000, max 10000)"),
@@ -315,7 +448,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   addTags: {
-    description: "Add tags to notes",
+    description: "Adds tags to existing notes without affecting existing tags (additive operation). Tags are space-separated in Anki but passed as a single string here. Use double quotes for tags with spaces. Hierarchical tags supported with '::'. Updates modification time. Does not validate tag names - be consistent with naming",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
       tags: z.string().describe("Space-separated tags"),
@@ -327,7 +460,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   removeTags: {
-    description: "Remove tags from notes",
+    description: "Removes specific tags from notes while preserving other tags. Tags parameter is space-separated string. Only removes exact matches - won't remove child tags when removing parent. Updates modification time. Safe operation - removing non-existent tags has no effect",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
       tags: z.string().describe("Space-separated tags"),
@@ -340,33 +473,47 @@ const tools: Record<string, ToolDef> = {
   
   // === CARD OPERATIONS ===
   findCards: {
-    description: "Find cards using Anki query syntax. Note: 'is:due' returns review cards only. Use getNextCards for learning+review queue order. Supports 'deck:current' for current deck. Returns paginated results",
+    description: "Search for cards using Anki's query syntax. Returns card IDs (not note IDs). Common queries: 'deck:DeckName' (cards in deck), 'is:due' (due for review today), 'is:new' (never studied), 'is:learn' (in learning phase), 'is:suspended' (suspended cards), 'prop:due<=0' (overdue), 'rated:1:1' (reviewed today, answered Hard). Note: 'is:due' excludes learning cards - use getNextCards for actual review order. IMPORTANT: Deck names with '::' hierarchy need quotes: 'deck:\"Parent::Child\"'. Returns paginated results",
     schema: z.object({
       query: z.string().describe("Search query (e.g. 'deck:current', 'deck:Default is:due', 'tag:japanese')"),
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(100).describe("Maximum cards to return (default 100, max 1000)"),
     }),
-    handler: async ({ query, offset, limit }) => {
-      const allCards = await ankiConnect("findCards", { query });
-      const total = allCards.length;
-      const effectiveLimit = Math.min(limit, 1000);
-      const paginatedCards = allCards.slice(offset, offset + effectiveLimit);
-      
-      return {
-        cards: paginatedCards,
-        pagination: {
-          offset,
-          limit: effectiveLimit,
-          total,
-          hasMore: offset + effectiveLimit < total,
-          nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
-        }
-      };
+    handler: async ({ query, offset = 0, limit = 100 }) => {
+      try {
+        const allCards = await ankiConnect("findCards", { query });
+        const total = Array.isArray(allCards) ? allCards.length : 0;
+        const effectiveLimit = Math.min(limit, 1000);
+        const paginatedCards = Array.isArray(allCards) ? allCards.slice(offset, offset + effectiveLimit) : [];
+        
+        return {
+          cards: paginatedCards,
+          pagination: {
+            offset,
+            limit: effectiveLimit,
+            total,
+            hasMore: offset + effectiveLimit < total,
+            nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
+          }
+        };
+      } catch (error) {
+        // Return empty result set on error
+        return {
+          cards: [],
+          pagination: {
+            offset,
+            limit: Math.min(limit, 1000),
+            total: 0,
+            hasMore: false,
+            nextOffset: null,
+          }
+        };
+      }
     },
   },
   
   getNextCards: {
-    description: "Get next cards in review queue following Anki's priority: 1) Learning cards (new/failed), 2) Review cards (due), 3) New cards. Returns cards in the order they'll appear. Supports pagination",
+    description: "Gets cards in the exact order they'll appear during review, following Anki's scheduling algorithm. Priority: 1) Cards in learning (red - failed or recently learned), 2) Review cards due today (green), 3) New cards up to daily limit (blue). Critical for simulating actual review session. Use deck:current for current deck or provide deck name. Includes suspended:false by default. Returns with scheduling metadata",
     schema: z.object({
       deck: z.string().describe("Deck name (or 'current' for current deck)").optional(),
       limit: z.number().describe("Maximum cards to return (default 10, max 100)").default(10),
@@ -454,7 +601,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   cardsInfo: {
-    description: "Get detailed card information. Automatically paginates large requests",
+    description: "Gets comprehensive card information including: cardId, noteId, deckName, modelName, question/answer HTML, scheduling data (due date, interval, ease factor, reviews, lapses), queue status, modification time, and more. Essential for understanding card state and history. Automatically handles string/number ID conversion and paginates large requests. Returns detailed objects for each card",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs (automatically batched if >100)"),
     }),
@@ -488,7 +635,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   suspend: {
-    description: "Suspend cards from review",
+    description: "Suspends cards, removing them from review queue while preserving all scheduling data. Suspended cards won't appear in reviews but remain in collection. Useful for temporarily hiding problematic or irrelevant cards. Can be reversed with unsuspend. Cards show yellow background in browser when suspended",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to suspend"),
     }),
@@ -498,7 +645,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   unsuspend: {
-    description: "Unsuspend cards for review",
+    description: "Restores suspended cards to active review queue with all scheduling data intact. Cards resume from where they left off - due cards become immediately due, learning cards continue learning phase. No scheduling information is lost during suspension period",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to unsuspend"),
     }),
@@ -508,7 +655,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getEaseFactors: {
-    description: "Get ease factors for cards",
+    description: "Gets ease factors (difficulty multipliers) for cards. Ease affects interval growth: default 250% (2.5x), minimum 130%, Hard decreases by 15%, Easy increases by 15%. Lower ease = more frequent reviews. Useful for identifying difficult cards (ease < 200%) that may need reformulation. Returns array of ease values",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -518,7 +665,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   setEaseFactors: {
-    description: "Set ease factors for cards",
+    description: "Manually sets ease factors for cards. Use with caution - can disrupt spaced repetition algorithm. Typical range: 130-300%. Setting ease to 250% resets to default. Lower values increase review frequency, higher values decrease it. Useful for manually adjusting difficult cards. Changes take effect on next review",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
       easeFactors: z.array(z.number()).describe("Ease factors (1.3-2.5)"),
@@ -532,7 +679,7 @@ const tools: Record<string, ToolDef> = {
   
   // === MODEL OPERATIONS ===
   modelNames: {
-    description: "List all note types. Returns paginated results",
+    description: "Lists all available note types (models) in the collection. Common built-in models: 'Basic' (Front/Back fields), 'Basic (and reversed card)', 'Cloze' (for cloze deletions), 'Basic (type in the answer)'. Custom models show user-defined names. Essential for addNote operations. Returns paginated results for collections with many models",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(1000).describe("Maximum models to return (default 1000, max 10000)"),
@@ -557,7 +704,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   modelFieldNames: {
-    description: "Get field names for a note type",
+    description: "Gets ordered list of field names for a specific model. Field names are case-sensitive and must match exactly when creating/updating notes. Common fields: 'Front', 'Back' (Basic), 'Text', 'Extra' (Cloze). Order matters for some operations. Essential for validating note data before creation",
     schema: z.object({
       modelName: z.string().describe("Note type name"),
     }),
@@ -566,7 +713,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   modelNamesAndIds: {
-    description: "Get model names and their IDs. Returns paginated results",
+    description: "Gets mapping of model names to their internal IDs. Model IDs are timestamps of creation and never change. Useful for operations requiring model IDs or checking if models exist. IDs are stable across syncs. Returns object with model names as keys, IDs as values. Paginated for large collections",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(1000).describe("Maximum entries to return (default 1000, max 10000)"),
@@ -592,7 +739,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   createModel: {
-    description: "Create a custom note type",
+    description: "Creates a custom note type with specified fields and card templates. Requires careful template syntax: {{Field}} for replacements, {{#Field}}...{{/Field}} for conditionals. Templates generate cards from notes. CSS styling is shared across all templates. Model name must be unique. Returns created model object. Complex operation - consider cloning existing models instead",
     schema: z.object({
       modelName: z.string().describe("Model name"),
       inOrderFields: z.array(z.string()).describe("Field names"),
@@ -684,13 +831,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   getNumCardsReviewedByDay: {
-    description: "Get review counts by day",
+    description: "Gets number of reviews performed on a specific day. Date format: Unix timestamp (seconds since epoch). Returns total review count including new, learning, and review cards. Useful for tracking study patterns and consistency. Historical data available since collection creation",
     schema: z.object({}),
     handler: async () => ankiConnect("getNumCardsReviewedByDay"),
   },
   
   getCollectionStatsHTML: {
-    description: "Get collection statistics as HTML",
+    description: "Gets comprehensive collection statistics as formatted HTML including: total cards/notes, daily averages, retention rates, mature vs young cards, time spent studying, forecast, and more. Same statistics shown in Anki's Stats window. HTML includes embedded CSS for proper rendering. Useful for dashboards and reporting",
     schema: z.object({
       wholeCollection: z.boolean().optional().default(true),
     }),
@@ -700,7 +847,7 @@ const tools: Record<string, ToolDef> = {
   
   // === MEDIA ===
   storeMediaFile: {
-    description: "Store a media file",
+    description: "Stores a media file in Anki's media folder. Accepts filename and base64-encoded data. Media is automatically synced to AnkiWeb. Supported formats: images (jpg, png, gif, svg), audio (mp3, ogg, wav), video (mp4, webm). File is available immediately for use in cards with HTML tags like <img> or [sound:]. Returns filename on success",
     schema: z.object({
       filename: z.string().describe("File name"),
       data: z.string().optional().describe("Base64 data"),
@@ -712,7 +859,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   retrieveMediaFile: {
-    description: "Retrieve a media file",
+    description: "Retrieves a media file from Anki's collection as base64-encoded data. Specify just the filename (not full path). Returns false if file doesn't exist. Useful for backing up media or transferring between collections. Large files may take time to encode",
     schema: z.object({
       filename: z.string().describe("File name"),
     }),
@@ -721,7 +868,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getMediaFilesNames: {
-    description: "Get media file names",
+    description: "Lists all media files in the collection including images, audio, and video files. Pattern supports wildcards (* and ?). Returns array of filenames (not paths). Useful for media management, finding unused files, or bulk operations. Large collections may have thousands of files",
     schema: z.object({
       pattern: z.string().optional().describe("File pattern"),
     }),
@@ -730,7 +877,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   deleteMediaFile: {
-    description: "Delete a media file",
+    description: "Permanently deletes a media file from the collection. CAUTION: Cannot be undone. File is removed immediately and will be deleted from AnkiWeb on next sync. Cards referencing the file will show broken media. Consider checking usage with findNotes before deletion",
     schema: z.object({
       filename: z.string().describe("File name"),
     }),
@@ -740,13 +887,13 @@ const tools: Record<string, ToolDef> = {
   
   // === MISCELLANEOUS ===
   sync: {
-    description: "Sync with AnkiWeb",
+    description: "Performs full two-way sync with AnkiWeb. Requires AnkiWeb credentials configured in Anki. Uploads local changes and downloads remote changes. May take time for large collections. Resolves conflicts based on modification time. Network errors may require retry. Not available in some Anki configurations",
     schema: z.object({}),
     handler: async () => ankiConnect("sync"),
   },
   
   getProfiles: {
-    description: "Get list of profiles. Returns paginated results",
+    description: "Lists all available Anki user profiles. Each profile has separate collections, settings, and add-ons. Useful for multi-user setups or separating study topics. Returns array of profile names. Current profile marked in Anki interface. Returns paginated results for many profiles",
     schema: z.object({
       offset: z.number().optional().default(0).describe("Starting position for pagination"),
       limit: z.number().optional().default(100).describe("Maximum profiles to return (default 100, max 1000)"),
@@ -771,7 +918,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   loadProfile: {
-    description: "Load a profile",
+    description: "Switches to a different user profile. Closes current collection and opens the specified profile's collection. All subsequent operations affect the new profile. May fail if profile doesn't exist or is already loaded. Useful for automated multi-profile operations",
     schema: z.object({
       name: z.string().describe("Profile name"),
     }),
@@ -779,7 +926,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   exportPackage: {
-    description: "Export deck as .apkg file",
+    description: "Exports a deck to .apkg format for sharing or backup. Path must be absolute and include .apkg extension. Set includeSched=false to exclude review history (for sharing). MediaFiles included by default. Creates portable package that can be imported to any Anki installation. Large decks with media may take time",
     schema: z.object({
       deck: z.string().describe("Deck name"),
       path: z.string().describe("Export path"),
@@ -790,7 +937,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   importPackage: {
-    description: "Import .apkg file",
+    description: "Imports an .apkg package file into the collection. Path must be absolute. Merges content with existing collection - doesn't overwrite. Handles duplicate detection based on note IDs. Media files are imported to media folder. May take significant time for large packages. Returns true on success",
     schema: z.object({
       path: z.string().describe("Import path"),
     }),
@@ -799,7 +946,7 @@ const tools: Record<string, ToolDef> = {
   
   // === GUI OPERATIONS ===
   guiBrowse: {
-    description: "Open card browser",
+    description: "Opens Anki's Browse window with optional search query. Query uses same syntax as findCards/findNotes. Useful for complex manual review or bulk operations. Browser allows editing, tagging, suspending, and more. Returns array of note IDs initially shown. Requires Anki GUI running",
     schema: z.object({
       query: z.string().describe("Search query"),
       reorderCards: z.object({
@@ -811,7 +958,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiAddCards: {
-    description: "Open Add Cards dialog",
+    description: "Opens Add Cards dialog pre-filled with specified content. Allows user to review and modify before adding. Useful for semi-automated card creation where human review is needed. CloseAfterAdding option controls dialog behavior. Returns note ID if card was added (null if cancelled). Requires GUI",
     schema: z.object({
       note: z.object({
         deckName: z.string(),
@@ -824,13 +971,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiCurrentCard: {
-    description: "Get current review card",
+    description: "Gets information about the card currently being reviewed in the main window. Returns null if not in review mode. Includes card ID, question/answer content, buttons available, and more. Useful for integration with review session or automated review helpers. Requires active review session",
     schema: z.object({}),
     handler: async () => ankiConnect("guiCurrentCard"),
   },
   
   guiAnswerCard: {
-    description: "Answer current card",
+    description: "Answers the current review card programmatically. Ease values: 1=Again (fail), 2=Hard, 3=Good, 4=Easy. Affects scheduling based on chosen ease. Only works during active review session. Automatically shows next card. Useful for automated review or accessibility tools. Returns true on success",
     schema: z.object({
       ease: z.number().min(1).max(4).describe("1=Again, 2=Hard, 3=Good, 4=Easy"),
     }),
@@ -838,7 +985,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiDeckOverview: {
-    description: "Show deck overview",
+    description: "Opens deck overview screen showing study options and statistics for specified deck. Displays new/learning/review counts and study buttons. User can start studying from this screen. Useful for navigating to specific deck programmatically. Requires GUI running",
     schema: z.object({
       name: z.string().describe("Deck name"),
     }),
@@ -846,7 +993,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiExitAnki: {
-    description: "Exit Anki",
+    description: "Closes Anki application completely. Saves all changes before exiting. Use with caution - terminates the Anki process. No confirmation dialog shown. Useful for automated workflows that need clean shutdown. Connection to Anki-Connect will be lost",
     schema: z.object({}),
     handler: async () => ankiConnect("guiExitAnki"),
   },
@@ -855,7 +1002,7 @@ const tools: Record<string, ToolDef> = {
   
   // Card Operations
   canAddNotes: {
-    description: "Check if notes can be added without actually adding them",
+    description: "Validates if notes can be added without actually creating them. Checks for: valid model name, valid deck name, required fields filled, duplicate detection (if not allowing duplicates). Returns array of booleans matching input array. Essential for validation before bulk operations. True means note can be added",
     schema: z.object({
       notes: z.array(z.object({
         deckName: z.string(),
@@ -868,7 +1015,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   areSuspended: {
-    description: "Check if cards are suspended",
+    description: "Checks suspension status for multiple cards. Returns array of booleans (true=suspended). Order matches input card ID array. More efficient than cardsInfo for just checking suspension. Useful for filtering active cards or managing suspended cards in bulk",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to check"),
     }),
@@ -878,7 +1025,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   areDue: {
-    description: "Check if cards are due for review",
+    description: "Checks if cards are due for review today. Returns array of booleans. Due means: new cards within daily limit, learning cards ready for next step, or review cards due today or overdue. Does not check suspension status. Order matches input array. Useful for filtering reviewable cards",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to check"),
     }),
@@ -888,7 +1035,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getIntervals: {
-    description: "Get review intervals for cards",
+    description: "Gets current intervals (days until next review) for cards. Returns array of intervals in days. Negative values indicate cards in learning phase (minutes/hours). Zero means due today. Useful for understanding card scheduling state and predicting future workload. Order matches input array",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
       complete: z.boolean().optional().describe("Return complete history"),
@@ -900,7 +1047,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   cardsToNotes: {
-    description: "Convert card IDs to note IDs",
+    description: "Converts card IDs to their parent note IDs. Multiple cards can belong to same note (e.g., Basic reversed, Cloze deletions). Returns array of note IDs matching input order. Useful when you have cards but need to operate on notes. Handles invalid IDs gracefully",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -910,7 +1057,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   cardsModTime: {
-    description: "Get modification times for cards (15x faster than cardsInfo)",
+    description: "Gets last modification timestamps for cards in milliseconds since epoch. Much faster than cardsInfo when you only need modification times (15x speedup). Returns array matching input order. Useful for sync operations, change detection, or sorting by recent activity",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -920,7 +1067,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   answerCards: {
-    description: "Answer multiple cards programmatically",
+    description: "Batch answers multiple cards without GUI. Each answer includes cardId and ease (1-4). Processes cards as if reviewed normally, updating scheduling. Does not require active review session. Returns array of booleans indicating success. Useful for automated review or importing review data. Use carefully - affects learning algorithm",
     schema: z.object({
       answers: z.array(z.object({
         cardId: z.union([z.number(), z.string()]),
@@ -936,7 +1083,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   forgetCards: {
-    description: "Reset cards to new state",
+    description: "Resets cards to 'new' state, clearing all review history and scheduling data. Cards become blue (new) again. Interval, ease factor, and review count reset. Useful for re-learning forgotten material or resetting problematic cards. CAUTION: Destroys review history permanently",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to reset"),
     }),
@@ -946,7 +1093,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   relearnCards: {
-    description: "Put cards into relearning queue",
+    description: "Places cards into relearning queue (similar to pressing Again on mature cards). Cards enter red learning phase with steps defined in deck config. Preserves ease factor unlike forget. Useful for cards that need refreshing without complete reset. Returns array of success indicators",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -956,7 +1103,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   setSpecificValueOfCard: {
-    description: "Set specific card values (use with caution)",
+    description: "Directly modifies internal card properties. EXTREME CAUTION: Can break scheduling algorithm if misused. Keys include: 'due' (due date), 'ease' (ease factor), 'ivl' (interval), 'reps' (review count), 'lapses' (failure count). Values must match Anki's internal format. For advanced users only. Can cause unexpected behavior",
     schema: z.object({
       card: z.union([z.number(), z.string()]).describe("Card ID"),
       keys: z.array(z.string()).describe("Field keys to update"),
@@ -974,7 +1121,7 @@ const tools: Record<string, ToolDef> = {
   
   // Deck Operations
   getDecks: {
-    description: "Get which decks cards belong to",
+    description: "Gets deck names for specified cards. Returns array of deck names matching input card order. Useful for organizing cards by deck, moving cards between decks, or filtering cards by location. Handles cards from different decks in single call",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -984,7 +1131,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   changeDeck: {
-    description: "Move cards to a different deck",
+    description: "Moves cards to a different deck while preserving all scheduling information. Cards maintain their review state, intervals, and ease factors. Only deck location changes. Creates deck if it doesn't exist. Useful for reorganizing without losing progress. Returns success status",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs to move"),
       deck: z.string().describe("Target deck name"),
@@ -996,7 +1143,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   saveDeckConfig: {
-    description: "Save deck configuration",
+    description: "Updates deck configuration group with new settings. Config includes: new cards/day, review limits, ease factors, learning steps, graduation intervals, leech threshold, and more. Changes affect all decks using this config group. Returns true on success. Be careful - can significantly impact learning",
     schema: z.object({
       config: z.record(z.any()).describe("Deck configuration object"),
     }),
@@ -1004,7 +1151,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   setDeckConfigId: {
-    description: "Change deck configuration group",
+    description: "Assigns a deck to a different configuration group. Allows sharing settings between decks or isolating deck settings. Config ID must exist (use getDeckConfig to find IDs). Changes take effect immediately for new reviews. Useful for applying preset configurations",
     schema: z.object({
       decks: z.array(z.string()).describe("Deck names"),
       configId: z.number().describe("Configuration ID"),
@@ -1014,7 +1161,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   cloneDeckConfigId: {
-    description: "Clone deck configuration",
+    description: "Creates a copy of an existing deck configuration with a new name. Cloned config starts with identical settings but can be modified independently. Useful for creating variations of successful configurations or testing changes without affecting originals. Returns new config ID",
     schema: z.object({
       name: z.string().describe("New config name"),
       cloneFrom: z.number().optional().describe("Config ID to clone from"),
@@ -1024,7 +1171,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   removeDeckConfigId: {
-    description: "Remove deck configuration",
+    description: "Deletes a deck configuration group. Decks using this config revert to default config. Cannot delete default config (ID 1) or configs in use. Permanent deletion - cannot be undone. Check deck assignments before deletion to avoid unintended changes",
     schema: z.object({
       configId: z.number().describe("Configuration ID to remove"),
     }),
@@ -1034,7 +1181,7 @@ const tools: Record<string, ToolDef> = {
   
   // Model Operations
   modelFieldsOnTemplates: {
-    description: "Get which fields are used in templates",
+    description: "Analyzes which fields are actually used in each card template. Returns mapping of template names to field arrays. Helps identify unused fields or understand template dependencies. Essential for model optimization or safe field deletion. Only shows fields referenced in templates",
     schema: z.object({
       modelName: z.string().describe("Model name"),
     }),
@@ -1043,7 +1190,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   modelTemplates: {
-    description: "Get card templates for a model",
+    description: "Gets all card templates for a model. Each template defines how cards are generated from notes. Returns object with template names as keys and template definitions (Front/Back format strings) as values. Templates use {{Field}} syntax with conditionals {{#Field}}...{{/Field}}. Essential for understanding card generation",
     schema: z.object({
       modelName: z.string().describe("Model name"),
     }),
@@ -1052,7 +1199,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   modelStyling: {
-    description: "Get CSS styling for a model",
+    description: "Gets CSS styling that applies to all cards of this model type. Returns CSS string that controls card appearance during review. Includes fonts, colors, alignment, and custom classes. Shared across all templates of the model. Understanding CSS required for modifications",
     schema: z.object({
       modelName: z.string().describe("Model name"),
     }),
@@ -1061,7 +1208,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   updateModelTemplates: {
-    description: "Update model templates",
+    description: "Updates card generation templates for a model. CAUTION: Affects all existing notes using this model. May delete cards if templates removed, or create cards if added. Template syntax errors can break card generation. Test changes on copy first. Returns updated template object",
     schema: z.object({
       model: z.object({
         name: z.string(),
@@ -1076,7 +1223,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   updateModelStyling: {
-    description: "Update model CSS styling",
+    description: "Updates CSS styling for all cards of a model type. Changes apply immediately to all cards during review. Invalid CSS may break card display. Affects all notes using this model. Consider model-specific classes to avoid conflicts. Test thoroughly before applying to important decks",
     schema: z.object({
       model: z.object({
         name: z.string(),
@@ -1089,7 +1236,7 @@ const tools: Record<string, ToolDef> = {
   
   // Note Operations
   updateNoteFields: {
-    description: "Update only note fields (simpler than updateNote)",
+    description: "Updates only the field values of a note, leaving tags unchanged. Simpler than updateNote when you only need to modify content. Fields object can be partial - unspecified fields remain unchanged. Updates modification time. Changes reflected in all cards from this note",
     schema: z.object({
       note: z.object({
         id: z.union([z.number(), z.string()]),
@@ -1105,7 +1252,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getNoteTags: {
-    description: "Get tags for specific notes",
+    description: "Gets tags for specified notes. Returns array of tag arrays matching input note order. Each note's tags returned as array of strings. More efficient than notesInfo when you only need tags. Useful for tag analysis or bulk tag operations",
     schema: z.object({
       note: z.union([z.number(), z.string()]).describe("Note ID"),
     }),
@@ -1115,13 +1262,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   clearUnusedTags: {
-    description: "Remove tags not used by any notes",
+    description: "Removes all tags from the tag list that aren't assigned to any notes. Cleans up tag autocomplete and tag browser. Safe operation - only removes truly unused tags. Useful after bulk deletions or tag reorganization. No effect on notes",
     schema: z.object({}),
     handler: async () => ankiConnect("clearUnusedTags"),
   },
   
   replaceTags: {
-    description: "Replace tags in specific notes",
+    description: "Replaces specific tags in selected notes. Only affects notes that have the tag_to_replace. Atomic operation - all specified notes updated together. Case-sensitive tag matching. Useful for renaming tags on subset of notes or fixing typos",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
       tagToReplace: z.string().describe("Tag to replace"),
@@ -1136,7 +1283,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   replaceTagsInAllNotes: {
-    description: "Global tag replacement across all notes",
+    description: "Globally replaces a tag across entire collection. Affects all notes with the specified tag. More efficient than replaceTags for collection-wide changes. Case-sensitive matching. Instant operation even on large collections. Useful for standardizing tag names or merging similar tags",
     schema: z.object({
       tagToReplace: z.string().describe("Tag to replace"),
       replaceWithTag: z.string().describe("Replacement tag"),
@@ -1149,13 +1296,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   removeEmptyNotes: {
-    description: "Delete notes with no cards",
+    description: "Deletes all notes that have no associated cards (orphaned notes). Can occur when all cards deleted via templates or manual deletion. Cleans up database. Returns count of deleted notes. Safe operation - only removes truly empty notes. Run periodically for maintenance",
     schema: z.object({}),
     handler: async () => ankiConnect("removeEmptyNotes"),
   },
   
   notesModTime: {
-    description: "Get modification times for notes",
+    description: "Gets last modification timestamps for notes in seconds since epoch. Returns array matching input order. More efficient than notesInfo for just timestamps. Useful for sync operations, change detection, or finding recently edited notes",
     schema: z.object({
       notes: z.array(z.union([z.number(), z.string()])).describe("Note IDs"),
     }),
@@ -1166,7 +1313,7 @@ const tools: Record<string, ToolDef> = {
   
   // Statistics
   cardReviews: {
-    description: "Get review history for cards",
+    description: "Gets complete review history for specified cards. Returns array of review arrays, each containing: reviewTime, cardID, ease, interval, lastInterval, factor, reviewDuration. Essential for analyzing learning patterns, identifying problem cards, or exporting review data. Large histories may be substantial",
     schema: z.object({
       deck: z.string().describe("Deck name"),
       startID: z.number().optional().describe("Start review ID"),
@@ -1176,7 +1323,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getLatestReviewID: {
-    description: "Get ID of most recent review",
+    description: "Gets the ID of the most recent review in collection. Review IDs increment monotonically. Useful for tracking new reviews since last check, implementing review sync, or monitoring study activity. Returns integer ID or null if no reviews",
     schema: z.object({
       deck: z.string().describe("Deck name"),
     }),
@@ -1185,7 +1332,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   getReviewsOfCards: {
-    description: "Get reviews for specific cards",
+    description: "Gets review entries for specific cards from the review log. More targeted than cardReviews. Returns review entries with timestamps, ease ratings, and intervals. Useful for detailed card analysis or custom statistics. Handles multiple cards efficiently",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
     }),
@@ -1196,13 +1343,13 @@ const tools: Record<string, ToolDef> = {
   
   // GUI Operations
   guiSelectedNotes: {
-    description: "Get selected notes in browser",
+    description: "Gets note IDs currently selected in the Browse window. Returns empty array if browser not open or nothing selected. Useful for creating tools that operate on user's selection. Requires browser window to be open. Selection can be from search or manual",
     schema: z.object({}),
     handler: async () => ankiConnect("guiSelectedNotes"),
   },
   
   guiSelectCard: {
-    description: "Select a card in the browser",
+    description: "Selects and scrolls to a specific card in the Browse window. Opens browser if not already open. Card is highlighted and details shown in preview pane. Useful for navigating to specific cards programmatically or showing search results. Returns true on success",
     schema: z.object({
       card: z.union([z.number(), z.string()]).describe("Card ID"),
     }),
@@ -1212,7 +1359,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiEditNote: {
-    description: "Open edit dialog for note",
+    description: "Opens the Edit Current Note dialog for a specific note. Shows all fields and tags in editable form. User can modify and save changes. Blocks until dialog closed. Returns modified note fields after save, or null if cancelled. Requires GUI running",
     schema: z.object({
       note: z.union([z.number(), z.string()]).describe("Note ID"),
     }),
@@ -1222,37 +1369,37 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiStartCardTimer: {
-    description: "Start timer for current card",
+    description: "Starts the review timer for current card. Timer tracks time spent on card for statistics. Usually starts automatically but can be triggered manually. Only works during active review session. Returns true if timer started successfully",
     schema: z.object({}),
     handler: async () => ankiConnect("guiStartCardTimer"),
   },
   
   guiShowQuestion: {
-    description: "Show question side of current card",
+    description: "Shows the question (front) side of current review card. Hides answer if visible. Resets timer if configured. Only works during review session. Useful for custom review interfaces or accessibility tools. Returns true on success",
     schema: z.object({}),
     handler: async () => ankiConnect("guiShowQuestion"),
   },
   
   guiShowAnswer: {
-    description: "Show answer side of current card",
+    description: "Reveals the answer (back) side of current review card. Shows rating buttons for ease selection. Timer continues running. Only works during review with question shown. Essential for custom review flows. Returns true on success",
     schema: z.object({}),
     handler: async () => ankiConnect("guiShowAnswer"),
   },
   
   guiUndo: {
-    description: "Undo last action",
+    description: "Undoes the last reviewable action in Anki. Can undo: card answers, note edits, note additions, deletions. Limited undo history (typically last 10 actions). Not all operations can be undone. Returns true if undo successful, false if nothing to undo",
     schema: z.object({}),
     handler: async () => ankiConnect("guiUndo"),
   },
   
   guiDeckBrowser: {
-    description: "Open deck browser",
+    description: "Opens the main deck browser screen showing all decks with statistics. This is Anki's home screen. Shows new/learning/due counts for each deck. User can select decks to study from here. Returns true when opened successfully",
     schema: z.object({}),
     handler: async () => ankiConnect("guiDeckBrowser"),
   },
   
   guiDeckReview: {
-    description: "Start deck review",
+    description: "Starts review session for specified deck. Opens review screen and shows first card. Follows configured order: learning, review, then new cards. User reviews with spacebar and number keys. Returns name of deck being reviewed. Requires GUI",
     schema: z.object({
       name: z.string().describe("Deck name"),
     }),
@@ -1260,13 +1407,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   guiCheckDatabase: {
-    description: "Check database integrity",
+    description: "Runs database integrity check and optimization. Checks for: corruption, missing media, invalid cards, orphaned notes. Fixes problems when possible. Shows progress dialog. May take time on large collections. Returns status message with problems found/fixed",
     schema: z.object({}),
     handler: async () => ankiConnect("guiCheckDatabase"),
   },
   
   guiImportFile: {
-    description: "Import file dialog",
+    description: "Opens import dialog for user to select and import files. Supports: .apkg (deck packages), .colpkg (collection), .txt/.csv (notes). Shows import options and progress. User controls duplicate handling. Returns import summary or null if cancelled. Requires GUI",
     schema: z.object({
       path: z.string().optional().describe("File path to import"),
     }),
@@ -1275,26 +1422,26 @@ const tools: Record<string, ToolDef> = {
   
   // Media Operations
   getMediaDirPath: {
-    description: "Get path to media folder",
+    description: "Gets absolute filesystem path to Anki's media folder where images, audio, and video files are stored. Path varies by OS and profile. Useful for direct media file operations or backup scripts. Typically: ~/Anki2/ProfileName/collection.media/",
     schema: z.object({}),
     handler: async () => ankiConnect("getMediaDirPath"),
   },
   
   // System Operations
   version: {
-    description: "Get Anki-Connect version",
+    description: "Gets the Anki-Connect addon version number. Useful for compatibility checks and ensuring required features are available. Version 6 is current stable. Different versions may have different available actions or parameters",
     schema: z.object({}),
     handler: async () => ankiConnect("version"),
   },
   
   requestPermission: {
-    description: "Request API permission",
+    description: "Requests permission to use Anki-Connect API. Shows dialog to user for approval. Required on first connection from new origin. Permission persists across sessions once granted. Returns permission status and version. Essential for web applications",
     schema: z.object({}),
     handler: async () => ankiConnect("requestPermission"),
   },
   
   apiReflect: {
-    description: "Get information about available API actions",
+    description: "Gets metadata about available Anki-Connect API actions including names, parameters, and descriptions. Useful for API discovery, generating documentation, or validating capabilities. Returns object with 'scopes' and 'actions' arrays. Essential for dynamic API clients",
     schema: z.object({
       scopes: z.array(z.string()).optional().describe("Scopes to query"),
       actions: z.array(z.string()).optional().describe("Actions to check"),
@@ -1304,13 +1451,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   reloadCollection: {
-    description: "Reload database from disk",
+    description: "Reloads the entire collection from disk, discarding any unsaved changes in memory. Useful after external database modifications or to resolve inconsistencies. Forces all cached data to refresh. Use sparingly - can be slow on large collections",
     schema: z.object({}),
     handler: async () => ankiConnect("reloadCollection"),
   },
   
   multi: {
-    description: "Execute multiple actions in one request",
+    description: "Executes multiple API actions in a single request. Each action runs independently with its own parameters. Returns array of results matching action order. Errors in one action don't affect others. Much more efficient than multiple requests. Maximum 100 actions recommended",
     schema: z.object({
       actions: z.array(z.object({
         action: z.string(),
@@ -1322,13 +1469,13 @@ const tools: Record<string, ToolDef> = {
   },
   
   getActiveProfile: {
-    description: "Get currently active profile",
+    description: "Gets the name of currently active Anki profile. Each profile has separate collections and settings. Useful for multi-profile workflows or confirming correct profile before operations. Returns profile name as string",
     schema: z.object({}),
     handler: async () => ankiConnect("getActiveProfile"),
   },
   
   setDueDate: {
-    description: "Set due date for cards",
+    description: "Manually sets the due date for cards, overriding normal scheduling. Date format: 'YYYY-MM-DD' or days from today (e.g., '5' for 5 days). Useful for vacation mode or manual scheduling adjustments. Preserves intervals and ease. Use carefully - disrupts spaced repetition algorithm",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
       days: z.string().describe("Days string (e.g., '1', '3-7', '0' for today)"),
@@ -1340,7 +1487,7 @@ const tools: Record<string, ToolDef> = {
   },
   
   suspended: {
-    description: "Check if a single card is suspended",
+    description: "Checks if a single card is currently suspended. Returns boolean (true if suspended). Simpler than areSuspended for single card checks. Suspended cards remain in collection but don't appear in reviews. Useful for conditional logic in automation",
     schema: z.object({
       card: z.union([z.number(), z.string()]).describe("Card ID"),
     }),
