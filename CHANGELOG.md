@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/briansunter/mankey/compare/v1.0.1...v1.0.2) (2025-09-04)
+
+
+### Bug Fixes
+
+* npx fix ([0773d66](https://github.com/briansunter/mankey/commit/0773d66e8966bd511d629bf72f7c6b303559d3bd))
+
 ## [1.0.1](https://github.com/briansunter/mankey/compare/v1.0.0...v1.0.1) (2025-09-04)
 
 
