@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/briansunter/mankey/compare/v1.0.0...v1.0.1) (2025-09-04)
+
+
+### Bug Fixes
+
+* update name ([a2e838b](https://github.com/briansunter/mankey/commit/a2e838be27a15c0d0f00e98d37c92b090e15682b))
+
 # 1.0.0 (2025-09-04)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "mankey",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for Anki integration via Anki-Connect",
   "module": "src/index.ts",
   "type": "module",
