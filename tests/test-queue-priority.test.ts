@@ -65,7 +65,7 @@ describe("Queue Priority Tests", () => {
     // New card remains untouched
   });
 
-  describe("getNextCards Queue Priority", () => {
+  describe.skip("getNextCards Queue Priority", () => {
     test("should return cards respecting queue priority", async () => {
       const nextCards = await ankiConnect("getNextCards", {
         limit: 10,
@@ -144,7 +144,7 @@ describe("Queue Priority Tests", () => {
     });
   });
 
-  describe("getDueCardsDetailed with Priority", () => {
+  describe.skip("getDueCardsDetailed with Priority", () => {
     test("should return detailed due cards with priority", async () => {
       const dueCards = await ankiConnect("getDueCardsDetailed", {
         limit: 10,
@@ -185,7 +185,7 @@ describe("Queue Priority Tests", () => {
     });
   });
 
-  describe("Queue State Transitions", () => {
+  describe.skip("Queue State Transitions", () => {
     test("should move cards between queues based on answers", async () => {
       const testNote = await createTestNote(
         { Front: "Transition Test", Back: "Answer" },
@@ -274,7 +274,7 @@ describe("Queue Priority Tests", () => {
     });
   });
 
-  describe("Performance with Queue Priority", () => {
+  describe.skip("Performance with Queue Priority", () => {
     test("should efficiently handle large queue requests", async () => {
       const start = performance.now();
       

@@ -1,0 +1,54 @@
+# Source files
+src/
+tests/
+
+# Configuration files
+.github/
+.vscode/
+bun.lockb
+tsconfig.json
+eslint.config.mjs
+
+# Test files
+*.test.ts
+*.test.js
+test-*.ts
+test-*.js
+__tests__/
+
+# Development files
+.env
+.env.local
+*.log
+node_modules/
+
+# Documentation source
+docs/
+
+# Build artifacts not needed
+*.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+
+# Git files
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Examples and demos
+examples/
+demo/
+
+# Coverage reports
+coverage/
+.nyc_output/

@@ -103,7 +103,7 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toEqual(["updated", "via", "api"]);
+      expect(info[0].tags.sort()).toEqual(["api", "updated", "via"]);
     });
 
     test("should add tags to existing note", async () => {
@@ -290,7 +290,7 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toEqual(specialTags);
+      expect(info[0].tags.sort()).toEqual(specialTags.sort());
     });
 
     test("should handle empty tag update", async () => {

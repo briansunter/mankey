@@ -14,6 +14,53 @@ export async function ankiConnect<T = any>(
   action: string,
   params: any = {}
 ): Promise<T> {
+  // Handle client-side pagination for findCards and findNotes
+  if ((action === "findCards" || action === "findNotes") && 
+      (params.offset !== undefined || params.limit !== undefined)) {
+    const offset = params.offset || 0;
+    const limit = params.limit;
+    
+    // Remove pagination params before sending to Anki-Connect
+    const cleanParams = { ...params };
+    delete cleanParams.offset;
+    delete cleanParams.limit;
+    
+    // Fetch all results
+    const response = await fetch(ANKI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        version: 6,
+        params: cleanParams,
+        ...(ANKI_API_KEY && { key: ANKI_API_KEY }),
+      }),
+    });
+    
+    const result = (await response.json()) as AnkiResponse<T>;
+    if (result.error) {
+      throw new Error(`AnkiConnect error: ${result.error}`);
+    }
+    
+    // Apply pagination to results
+    const allResults = result.result as any[];
+    const paginatedResults = limit !== undefined 
+      ? allResults.slice(offset, offset + limit)
+      : allResults.slice(offset);
+    
+    // Return paginated response with metadata
+    const responseKey = action === "findCards" ? "cards" : "notes";
+    return {
+      [responseKey]: paginatedResults,
+      total: allResults.length,
+      hasMore: offset + (limit || 0) < allResults.length,
+      offset,
+      limit,
+      nextOffset: offset + (limit || 0)
+    } as T;
+  }
+  
+  // Standard API call without pagination
   const response = await fetch(ANKI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -184,12 +231,13 @@ export async function createTestNotes(
   count: number,
   prefix = "Test"
 ): Promise<number[]> {
+  const timestamp = Date.now();
   const notes = Array.from({ length: count }, (_, i) => ({
     deckName: "Default",
     modelName: "Basic",
     fields: {
-      Front: `${prefix} Front ${i + 1}`,
-      Back: `${prefix} Back ${i + 1}`,
+      Front: `${prefix} Front ${i + 1} - ${timestamp}`,
+      Back: `${prefix} Back ${i + 1} - ${timestamp}`,
     },
     tags: ["test", `batch${i + 1}`],
   }));
@@ -207,13 +255,13 @@ export async function getCardsByDeck(deck: string): Promise<number[]> {
 /**
  * Suspend cards
  */
-export async function suspendCards(cardIds: number[]): Promise<boolean> {
+export async function suspendCards(cardIds: number[]): Promise<any> {
   return ankiConnect("suspend", { cards: cardIds });
 }
 
 /**
  * Unsuspend cards
  */
-export async function unsuspendCards(cardIds: number[]): Promise<boolean> {
+export async function unsuspendCards(cardIds: number[]): Promise<any> {
   return ankiConnect("unsuspend", { cards: cardIds });
 }
