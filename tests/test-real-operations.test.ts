@@ -9,6 +9,8 @@ import {
   unsuspendCards,
   getDeckStats,
   answerCard,
+  type FindCardsResponse,
+  type FindNotesResponse,
 } from "./test-utils";
 
 describe("Real Operations Integration Tests", () => {
@@ -46,8 +48,8 @@ describe("Real Operations Integration Tests", () => {
         notes: [noteId],
       });
       expect(info).toHaveLength(1);
-      expect(info[0]!.fields.Front!.value).toBe("What is Model Context Protocol?");
-      expect(info[0]!.tags).toContain("updated");
+      expect(info[0]?.fields.Front?.value).toBe("What is Model Context Protocol?");
+      expect(info[0]?.tags).toContain("updated");
 
       // Delete note
       const deleteResult = await ankiConnect("deleteNotes", {
@@ -152,31 +154,31 @@ describe("Real Operations Integration Tests", () => {
       const noteIds = await createTestNotes(totalNotes, "Pagination");
 
       // Test paginated findCards
-      const firstPage = await ankiConnect("findCards", {
+      const firstPage = await ankiConnect<FindCardsResponse>("findCards", {
         query: "tag:test",
         offset: 0,
         limit: 5,
-      }) as { cards: number[]; hasMore: boolean };
-      expect((firstPage as any).cards.length).toBeLessThanOrEqual(5);
-      expect((firstPage as any).hasMore).toBeDefined();
+      });
+      expect(firstPage.cards.length).toBeLessThanOrEqual(5);
+      expect(firstPage.hasMore).toBeDefined();
 
-      if ((firstPage as any).hasMore) {
-        const secondPage = await ankiConnect("findCards", {
+      if (firstPage.hasMore) {
+        const secondPage = await ankiConnect<FindCardsResponse>("findCards", {
           query: "tag:test",
           offset: 5,
           limit: 5,
-        }) as { cards: number[] };
-        expect((secondPage as any).cards).toBeDefined();
+        });
+        expect(secondPage.cards).toBeDefined();
       }
 
       // Test paginated findNotes
-      const notesPage = await ankiConnect("findNotes", {
+      const notesPage = await ankiConnect<FindNotesResponse>("findNotes", {
         query: "tag:test",
         offset: 0,
         limit: 10,
-      }) as { notes: number[]; total: number };
-      expect((notesPage as any).notes).toBeDefined();
-      expect((notesPage as any).total).toBeGreaterThanOrEqual(totalNotes);
+      });
+      expect(notesPage.notes).toBeDefined();
+      expect(notesPage.total).toBeGreaterThanOrEqual(totalNotes);
 
       // Clean up
       await cleanupNotes(noteIds);

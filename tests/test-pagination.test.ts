@@ -4,8 +4,8 @@ import {
   createTestNotes,
   cleanupNotes,
   setupTestEnvironment,
+  type PaginatedResponse,
 } from "./test-utils";
-import type { PaginatedResponse } from "./test-utils";
 
 // Define interfaces for typed responses
 interface CardInfo {
@@ -43,7 +43,7 @@ describe("Pagination Tests", () => {
         limit,
       });
       expect(page1.cards).toBeDefined();
-      expect(page1.cards!.length).toBeLessThanOrEqual(limit);
+      expect(page1.cards?.length).toBeLessThanOrEqual(limit);
       expect(page1.hasMore).toBe(true);
       expect(page1.total).toBeGreaterThanOrEqual(TOTAL_NOTES);
       
@@ -54,7 +54,7 @@ describe("Pagination Tests", () => {
         limit,
       });
       expect(page2.cards).toBeDefined();
-      expect(page2.cards!.length).toBeLessThanOrEqual(limit);
+      expect(page2.cards?.length).toBeLessThanOrEqual(limit);
       
       // Verify no overlap between pages
       const page1Ids = new Set(page1.cards as number[]);
@@ -84,7 +84,7 @@ describe("Pagination Tests", () => {
         limit: 10,
       });
       
-      expect(result.cards!).toHaveLength(0);
+      expect(result.cards).toHaveLength(0);
       expect(result.hasMore).toBe(false);
     });
 
@@ -95,7 +95,7 @@ describe("Pagination Tests", () => {
         limit: 1,
       });
       
-      expect(result.cards!).toHaveLength(1);
+      expect(result.cards).toHaveLength(1);
       expect(result.hasMore).toBe(true);
     });
   });
@@ -111,7 +111,7 @@ describe("Pagination Tests", () => {
         limit,
       });
       expect(page1.notes).toBeDefined();
-      expect(page1.notes!.length).toBeLessThanOrEqual(limit);
+      expect(page1.notes?.length).toBeLessThanOrEqual(limit);
       expect(page1.hasMore).toBe(true);
       expect(page1.total).toBeGreaterThanOrEqual(TOTAL_NOTES);
       expect(page1.nextOffset).toBe(limit);
@@ -123,7 +123,7 @@ describe("Pagination Tests", () => {
         limit,
       });
       expect(page2.notes).toBeDefined();
-      expect(page2.notes!.length).toBeLessThanOrEqual(limit);
+      expect(page2.notes?.length).toBeLessThanOrEqual(limit);
       
       // Verify no overlap
       const page1Ids = new Set(page1.notes as number[]);
@@ -153,7 +153,7 @@ describe("Pagination Tests", () => {
           limit: size,
         });
         
-        expect(result.notes!.length).toBeLessThanOrEqual(size);
+        expect(result.notes?.length).toBeLessThanOrEqual(size);
         expect(result.total).toBeGreaterThanOrEqual(TOTAL_NOTES);
       }
     });
@@ -220,7 +220,7 @@ describe("Pagination Tests", () => {
         limit: 0,
       });
       
-      expect(result.cards!).toHaveLength(0);
+      expect(result.cards).toHaveLength(0);
       expect(result.total).toBeGreaterThan(0);
     });
 
@@ -232,7 +232,7 @@ describe("Pagination Tests", () => {
       });
       
       expect(result.notes).toBeDefined();
-      expect(result.notes!.length).toBeGreaterThan(0);
+      expect(result.notes?.length).toBeGreaterThan(0);
     });
 
     test("should handle very large limit", async () => {
@@ -244,7 +244,7 @@ describe("Pagination Tests", () => {
       
       expect(result.cards).toBeDefined();
       expect(result.hasMore).toBe(false);
-      expect(result.cards!.length).toBeGreaterThanOrEqual(TOTAL_NOTES);
+      expect(result.cards?.length).toBeGreaterThanOrEqual(TOTAL_NOTES);
     });
 
     test("should maintain consistency across paginated requests", async () => {
@@ -297,7 +297,7 @@ describe("Pagination Tests", () => {
       });
       
       expect(result.total).toBeGreaterThanOrEqual(TOTAL_NOTES);
-      expect(result.notes!).toHaveLength(1);
+      expect(result.notes).toHaveLength(1);
     });
   });
 

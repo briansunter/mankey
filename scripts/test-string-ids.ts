@@ -76,7 +76,7 @@ async function testStringIds() {
       query: "deck:Default" 
     }) as { content: Array<{ text: string }> } | null;
     if (!findResult?.content?.[0]?.text) {
-      throw new Error('Failed to find cards');
+      throw new Error("Failed to find cards");
     }
     const cardIds = JSON.parse(findResult.content[0].text);
     console.log(`✅ Found ${cardIds.length} cards`);
@@ -91,7 +91,7 @@ async function testStringIds() {
           cards: stringIds 
         }) as { content: Array<{ text: string }> } | null;
         if (!cardsInfoResult?.content?.[0]?.text) {
-          throw new Error('Failed to get cards info');
+          throw new Error("Failed to get cards info");
         }
         const info = JSON.parse(cardsInfoResult.content[0].text);
         console.log(`✅ cardsInfo handled string IDs correctly (got ${info.length} cards)`);
@@ -108,7 +108,7 @@ async function testStringIds() {
           cards: mixedIds 
         }) as { content: Array<{ text: string }> } | null;
         if (!mixedResult?.content?.[0]?.text) {
-          throw new Error('Failed to get mixed cards info');
+          throw new Error("Failed to get mixed cards info");
         }
         const mixedInfo = JSON.parse(mixedResult.content[0].text);
         console.log(`✅ cardsInfo handled mixed IDs correctly (got ${mixedInfo.length} cards)`);
@@ -123,7 +123,7 @@ async function testStringIds() {
       query: "deck:Default" 
     }) as { content: Array<{ text: string }> } | null;
     if (!notesResult?.content?.[0]?.text) {
-      throw new Error('Failed to find notes');
+      throw new Error("Failed to find notes");
     }
     const noteIds = JSON.parse(notesResult.content[0].text);
     
@@ -136,7 +136,7 @@ async function testStringIds() {
           notes: stringNoteIds 
         }) as { content: Array<{ text: string }> } | null;
         if (!notesInfoResult?.content?.[0]?.text) {
-          throw new Error('Failed to get notes info');
+          throw new Error("Failed to get notes info");
         }
         const info = JSON.parse(notesInfoResult.content[0].text);
         console.log(`✅ notesInfo handled string IDs correctly (got ${info.length} notes)`);

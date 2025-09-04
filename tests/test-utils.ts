@@ -17,6 +17,27 @@ export interface PaginatedResponse {
   nextOffset: number;
 }
 
+export interface DeckStats {
+  new_count: number;
+  learn_count: number;
+  review_count: number;
+  total_in_deck: number;
+}
+
+export interface DeckStatsResponse {
+  [deckName: string]: DeckStats;
+}
+
+export interface FindCardsResponse {
+  cards: number[];
+  hasMore: boolean;
+}
+
+export interface FindNotesResponse {
+  notes: number[];
+  total: number;
+}
+
 /**
  * Helper to call Anki-Connect API directly
  */
@@ -27,8 +48,8 @@ export async function ankiConnect<T = unknown>(
   // Handle client-side pagination for findCards and findNotes
   if ((action === "findCards" || action === "findNotes") && 
       (params.offset !== undefined || params.limit !== undefined)) {
-    const offset = typeof params.offset === 'number' ? params.offset : 0;
-    const limit = typeof params.limit === 'number' ? params.limit : undefined;
+    const offset = typeof params.offset === "number" ? params.offset : 0;
+    const limit = typeof params.limit === "number" ? params.limit : undefined;
     
     // Remove pagination params before sending to Anki-Connect
     const cleanParams = { ...params };

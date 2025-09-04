@@ -5,6 +5,7 @@ import {
   cleanupNotes,
   setupTestEnvironment,
   createTestNotes,
+  type DeckStatsResponse,
 } from "./test-utils";
 
 describe("Edge Cases and Additional Coverage", () => {
@@ -366,7 +367,7 @@ describe("Edge Cases and Additional Coverage", () => {
 
   describe("Deck Statistics Edge Cases", () => {
     test("should get stats for multiple decks", async () => {
-      const stats = await ankiConnect("getDeckStats", {
+      const stats = await ankiConnect<DeckStatsResponse>("getDeckStats", {
         decks: ["Default"],
       });
       
@@ -374,8 +375,8 @@ describe("Edge Cases and Additional Coverage", () => {
       // getDeckStats may return an empty object if deck has no cards
       expect(stats).toBeDefined();
       
-      if ((stats as Record<string, unknown>).Default) {
-        const defaultStats = (stats as any).Default;
+      if (stats.Default) {
+        const defaultStats = stats.Default;
         expect(defaultStats).toHaveProperty("new_count");
         expect(defaultStats).toHaveProperty("learn_count");
         expect(defaultStats).toHaveProperty("review_count");
