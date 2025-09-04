@@ -1,0 +1,23 @@
+# Bun configuration
+
+[test]
+# Root directory for tests
+root = "./tests"
+
+# Test timeout in milliseconds
+timeout = 30000
+
+# Run tests in watch mode by default
+# watch = false
+
+# Test coverage settings
+coverage = true
+coverageSkipTestFiles = true
+
+[install]
+# Package manager settings
+auto = "auto"
+
+[run]
+# Auto-install packages when running scripts
+autoInstall = true

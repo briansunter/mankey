@@ -91,15 +91,22 @@ Both `[1234]` and `["1234"]` work
 ## Testing
 
 ```bash
-# Core tests
-bun bin/test-anki-connect.ts      # Connectivity
-bun bin/test-real-operations.ts   # All operations
-bun bin/test-queue-priority.ts    # Queue system
-bun bin/test-pagination.ts        # Pagination
+# Run all E2E tests
+bun test:e2e
 
-# Validation tests  
-bun bin/test-fixes.ts             # Return values
-bun bin/test-tags.ts              # Tag handling
+# Run specific test suites
+bun test:e2e:basic      # Basic connectivity
+bun test:e2e:tags       # Tag handling
+bun test:e2e:fixes      # Return value consistency
+bun test:e2e:real       # Real operations
+bun test:e2e:pagination # Pagination support
+bun test:e2e:queue      # Queue priority
+
+# Run with test runner (includes connection check)
+bun test:e2e:all
+
+# Development
+bun test:e2e:watch      # Watch mode
 ```
 
 ## Project Structure
@@ -107,9 +114,14 @@ bun bin/test-tags.ts              # Tag handling
 ```
 anky/
 ├── src/index.ts           # MCP server (45 tools)
-├── bin/                   # Test scripts
+├── tests/                 # E2E integration tests
+│   ├── *.test.ts         # Bun Jest test suites
+│   ├── test-utils.ts     # Shared test utilities
+│   └── run-tests.ts      # Test runner
+├── bin/                   # Utility scripts
 ├── docs/                  # Documentation
-└── package.json          # Dependencies
+├── package.json          # Dependencies
+└── bunfig.toml          # Bun configuration
 ```
 
 ## Troubleshooting
