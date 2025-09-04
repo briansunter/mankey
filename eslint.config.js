@@ -38,6 +38,10 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       
+      // Disable base rule in favor of TypeScript version
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'error',
+      
       // General rules
       'no-console': 'off',
       'no-debugger': 'warn',

@@ -4,10 +4,10 @@
  * Test the simplified MCP server
  */
 
-import { spawn } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 
 class SimplifiedTestClient {
-  private process: any;
+  private process: ChildProcess | null = null;
   private responseBuffer = "";
   private requestId = 1;
   
@@ -16,14 +16,14 @@ class SimplifiedTestClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
     
-    this.process.stdout.on("data", (data: Buffer) => {
+    this.process.stdout?.on("data", (data: Buffer) => {
       this.responseBuffer += data.toString();
     });
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     const request = {
       jsonrpc: "2.0",
       id: this.requestId++,
@@ -31,7 +31,7 @@ class SimplifiedTestClient {
       params: { name, arguments: args }
     };
     
-    this.process.stdin.write(JSON.stringify(request) + "\n");
+    this.process?.stdin?.write(JSON.stringify(request) + "\n");
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const lines = this.responseBuffer.split("\n");
@@ -68,12 +68,12 @@ async function testSimplified() {
     console.log("\n📊 Quick Validation:");
     
     // 1. List decks
-    const decks = await client.callTool("deckNames", {});
+    const decks = await client.callTool("deckNames", {}) as { content: Array<{ text: string }> };
     console.log("✅ List decks:", JSON.parse(decks.content[0].text).length > 0);
     
     // 2. Create and delete a test deck
     const testDeck = `SimplifiedTest_${Date.now()}`;
-    const createResult = await client.callTool("createDeck", { deck: testDeck });
+    const createResult = await client.callTool("createDeck", { deck: testDeck }) as { content: Array<{ text: string }> };
     console.log("✅ Create deck:", JSON.parse(createResult.content[0].text) > 0);
     
     // 3. Add a note
@@ -82,14 +82,14 @@ async function testSimplified() {
       modelName: "Basic",
       fields: { Front: "Test Q", Back: "Test A" },
       tags: ["test"]
-    });
+    }) as { content: Array<{ text: string }> };
     const noteId = JSON.parse(noteResult.content[0].text);
     console.log("✅ Add note:", noteId > 0);
     
     // 4. Find the note
     const findResult = await client.callTool("findNotes", { 
       query: `deck:${testDeck}` 
-    });
+    }) as { content: Array<{ text: string }> };
     console.log("✅ Find notes:", JSON.parse(findResult.content[0].text).length === 1);
     
     // 5. Delete the note
@@ -105,8 +105,8 @@ async function testSimplified() {
     
     console.log("\n✨ Simplified server works correctly!");
     
-  } catch (error: any) {
-    console.error("❌ Error:", error.message);
+  } catch (error: unknown) {
+    console.error("❌ Error:", error instanceof Error ? error.message : String(error));
   } finally {
     client.stop();
   }

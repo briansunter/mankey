@@ -37,7 +37,7 @@ async function checkAnkiConnection(): Promise<boolean> {
         version: 6,
       }),
     });
-    const result: any = await response.json();
+    const result = await response.json() as { result: number; error?: string };
     return !result.error && result.result >= 6;
   } catch {
     return false;

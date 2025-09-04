@@ -79,7 +79,7 @@ async function testMCPServerDirect() {
   });
   
   let responseBuffer = "";
-  const responses: any[] = [];
+  const responses: { id: number; error?: { message: string }; [key: string]: unknown }[] = [];
   
   // Handle server output
   serverProcess.stdout.on("data", (data: Buffer) => {

@@ -84,7 +84,7 @@ describe("Tag Handling Tests", () => {
     });
 
     test("should create note with initial tags", async () => {
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags).toContain("initial");
@@ -100,7 +100,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags.sort()).toEqual(["api", "updated", "via"]);
@@ -113,7 +113,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags).toContain("new");
@@ -128,7 +128,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags).not.toContain("new");
@@ -144,7 +144,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags).toContain("replaced");
@@ -203,7 +203,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: noteIds,
       });
       info.forEach((note) => {
@@ -219,7 +219,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: noteIds,
       });
       info.forEach((note) => {
@@ -235,7 +235,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: noteIds,
       });
       info.forEach((note) => {
@@ -287,7 +287,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags.sort()).toEqual(specialTags.sort());
@@ -302,7 +302,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].tags).toEqual([]);
@@ -317,10 +317,10 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags.filter((t: string) => t === "duplicate").length).toBe(1);
+      expect(info[0].tags.filter((t) => t === "duplicate").length).toBe(1);
       expect(info[0].tags).toContain("unique");
     });
 
@@ -333,7 +333,7 @@ describe("Tag Handling Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       // Anki may handle case differently

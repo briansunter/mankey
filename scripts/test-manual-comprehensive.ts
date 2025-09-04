@@ -16,13 +16,13 @@ interface TestResult {
   action: string;
   success: boolean;
   error?: string;
-  result?: any;
+  result?: unknown;
 }
 
 const testResults: TestResult[] = [];
 
 // Helper function for Anki-Connect requests
-async function ankiRequest(action: string, params?: any): Promise<any> {
+async function ankiRequest(action: string, params?: Record<string, unknown>): Promise<unknown> {
   try {
     const response = await fetch(ANKI_CONNECT_URL, {
       method: "POST",
@@ -34,7 +34,7 @@ async function ankiRequest(action: string, params?: any): Promise<any> {
       })
     });
 
-    const data = await response.json() as { error?: string; result?: any };
+    const data = await response.json() as { error?: string; result?: unknown };
     
     if (data.error) {
       throw new Error(data.error);
@@ -47,7 +47,7 @@ async function ankiRequest(action: string, params?: any): Promise<any> {
 }
 
 // Test logging
-function logTest(category: string, action: string, success: boolean, result?: any, error?: string) {
+function logTest(category: string, action: string, success: boolean, result?: unknown, error?: string) {
   const icon = success ? "✅" : "❌";
   console.log(`${icon} [${category}] ${action}`);
   if (error) {console.log(`   Error: ${error}`);}
@@ -73,8 +73,8 @@ async function testSystemActions() {
     try {
       const result = await ankiRequest(test.action, test.params);
       logTest("System", test.action, true, result);
-    } catch (error: any) {
-      logTest("System", test.action, false, null, error.message);
+    } catch (error: unknown) {
+      logTest("System", test.action, false, null, error instanceof Error ? error.message : String(error));
     }
   }
 }
@@ -110,8 +110,8 @@ async function testDeckActions() {
     await ankiRequest("deleteDecks", { decks: [testDeckName], cardsToo: true });
     logTest("Deck", "deleteDecks", true);
     
-  } catch (error: any) {
-    logTest("Deck", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Deck", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -130,7 +130,7 @@ async function testModelActions() {
     logTest("Model", "modelNamesAndIds", true, modelNamesAndIds);
     
     // Get field names for Basic model
-    if (modelNames.includes("Basic")) {
+    if (Array.isArray(modelNames) && modelNames.includes("Basic")) {
       const fieldNames = await ankiRequest("modelFieldNames", { modelName: "Basic" });
       logTest("Model", "modelFieldNames", true, fieldNames);
       
@@ -147,8 +147,8 @@ async function testModelActions() {
       logTest("Model", "modelStyling", true, styling);
     }
     
-  } catch (error: any) {
-    logTest("Model", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Model", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -177,7 +177,7 @@ async function testNoteActions() {
     logTest("Note", "canAddNotes", true, canAdd);
     
     // Add a test note if possible
-    if (canAdd[0]) {
+    if (Array.isArray(canAdd) && canAdd[0]) {
       const noteId = await ankiRequest("addNote", {
         note: {
           deckName: "Default",
@@ -218,8 +218,8 @@ async function testNoteActions() {
       logTest("Note", "deleteNotes", true);
     }
     
-  } catch (error: any) {
-    logTest("Note", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Note", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -233,7 +233,7 @@ async function testCardActions() {
     const cards = await ankiRequest("findCards", { query: "deck:Default" });
     logTest("Card", "findCards", true, cards);
     
-    if (cards && cards.length > 0) {
+    if (Array.isArray(cards) && cards.length > 0) {
       // Take first few cards for testing
       const testCards = cards.slice(0, Math.min(3, cards.length));
       
@@ -266,8 +266,8 @@ async function testCardActions() {
       logTest("Card", "cardsModTime", true, modTime);
     }
     
-  } catch (error: any) {
-    logTest("Card", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Card", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -293,8 +293,8 @@ async function testStatisticsActions() {
     const latestReviewId = await ankiRequest("getLatestReviewID", { deck: "Default" });
     logTest("Statistics", "getLatestReviewID", true, latestReviewId);
     
-  } catch (error: any) {
-    logTest("Statistics", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Statistics", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -333,8 +333,8 @@ async function testMediaActions() {
     await ankiRequest("deleteMediaFile", { filename: testFileName });
     logTest("Media", "deleteMediaFile", true);
     
-  } catch (error: any) {
-    logTest("Media", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Media", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -354,8 +354,8 @@ async function testGUIActions() {
     });
     logTest("GUI", "guiBrowse", true, browserCards);
     
-  } catch (error: any) {
-    logTest("GUI", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("GUI", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -383,8 +383,8 @@ async function testAdvancedFeatures() {
     });
     logTest("Advanced", "exportPackage", true, canExport);
     
-  } catch (error: any) {
-    logTest("Advanced", "Various", false, null, error.message);
+  } catch (error: unknown) {
+    logTest("Advanced", "Various", false, null, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -484,7 +484,7 @@ async function runAllTests() {
     // Exit code based on results
     process.exit(report.failed > 0 ? 1 : 0);
     
-  } catch (_error) {
+  } catch (_error: unknown) {
     console.error("\n❌ FATAL ERROR:", _error);
     console.error("Cannot connect to Anki-Connect. Please ensure:");
     console.error("1. Anki is running");

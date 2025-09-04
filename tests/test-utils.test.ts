@@ -29,7 +29,7 @@ describe("Test Utils Functions", () => {
     test("should handle JSON with nested brackets", () => {
       const input = '[["nested"]]';
       const result = normalizeTags(input);
-      expect(result).toEqual([["nested"] as any]);
+      expect(result).toEqual([["nested"]]);
     });
 
     test("should handle number input", () => {
@@ -217,7 +217,7 @@ describe("Test Utils Functions", () => {
       expect(noteIds.every((id) => id > 0)).toBe(true);
       
       // Verify notes were created with correct content
-      const notesInfo = await ankiConnect<any[]>("notesInfo", {
+      const notesInfo = await ankiConnect<Array<{ fields: { Front: { value: string }; Back: { value: string } }; tags: string[] }>>("notesInfo", {
         notes: noteIds,
       });
       
@@ -253,7 +253,7 @@ describe("Test Utils Functions", () => {
       
       if (cards.length > 0) {
         // Verify they belong to Default deck
-        const cardInfo = await ankiConnect<any[]>("cardsInfo", {
+        const cardInfo = await ankiConnect<Array<{ deckName: string }>>("cardsInfo", {
           cards: cards.slice(0, 5), // Check first 5 cards
         });
         

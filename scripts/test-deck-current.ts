@@ -7,7 +7,7 @@
 import { spawn } from "child_process";
 
 class TestClient {
-  private process: any;
+  private process: import("child_process").ChildProcess | null = null;
   private responseBuffer = "";
   private requestId = 1;
   
@@ -16,11 +16,11 @@ class TestClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
     
-    this.process.stdout.on("data", (data: Buffer) => {
+    this.process.stdout?.on("data", (data: Buffer) => {
       this.responseBuffer += data.toString();
     });
     
-    this.process.stderr.on("data", (data: Buffer) => {
+    this.process.stderr?.on("data", (data: Buffer) => {
       const msg = data.toString();
       if (!msg.includes("running on stdio")) {
         console.log("Server:", msg.trim());
@@ -30,7 +30,7 @@ class TestClient {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     const request = {
       jsonrpc: "2.0",
       id: this.requestId++,
@@ -38,7 +38,7 @@ class TestClient {
       params: { name, arguments: args }
     };
     
-    this.process.stdin.write(JSON.stringify(request) + "\n");
+    this.process?.stdin?.write(JSON.stringify(request) + "\n");
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const lines = this.responseBuffer.split("\n");
@@ -76,7 +76,8 @@ async function testDeckCurrent() {
     const cardsResult = await client.callTool("findCards", {
       query: "deck:current"
     });
-    const cards = JSON.parse(cardsResult.content[0].text);
+    const cardsContent = (cardsResult as { content: [{ text: string }] }).content[0].text;
+    const cards = JSON.parse(cardsContent) as unknown[];
     console.log(`✅ Found ${cards.length} cards in current deck`);
     
     // Test 2: findCards with deck:current and additional filters
@@ -84,7 +85,8 @@ async function testDeckCurrent() {
     const dueResult = await client.callTool("findCards", {
       query: "deck:current is:due"
     });
-    const dueCards = JSON.parse(dueResult.content[0].text);
+    const dueContent = (dueResult as { content: [{ text: string }] }).content[0].text;
+    const dueCards = JSON.parse(dueContent) as unknown[];
     console.log(`✅ Found ${dueCards.length} due cards in current deck`);
     
     // Test 3: findNotes with deck:current
@@ -92,7 +94,8 @@ async function testDeckCurrent() {
     const notesResult = await client.callTool("findNotes", {
       query: "deck:current"
     });
-    const notes = JSON.parse(notesResult.content[0].text);
+    const notesContent = (notesResult as { content: [{ text: string }] }).content[0].text;
+    const notes = JSON.parse(notesContent) as unknown[];
     console.log(`✅ Found ${notes.length} notes in current deck`);
     
     // Test 4: getNextCards with deck:'current'
@@ -101,7 +104,8 @@ async function testDeckCurrent() {
       deck: "current",
       limit: 5
     });
-    const nextCards = JSON.parse(nextResult.content[0].text);
+    const nextContent = (nextResult as { content: [{ text: string }] }).content[0].text;
+    const nextCards = JSON.parse(nextContent) as { totalCards: number; breakdown: { learning: number; review: number; new: number } };
     console.log(`✅ Got ${nextCards.totalCards} cards from current deck`);
     console.log(`   Learning: ${nextCards.breakdown.learning}`);
     console.log(`   Review: ${nextCards.breakdown.review}`);
@@ -112,7 +116,8 @@ async function testDeckCurrent() {
     const detailedResult = await client.callTool("getDueCardsDetailed", {
       deck: "current"
     });
-    const detailed = JSON.parse(detailedResult.content[0].text);
+    const detailedContent = (detailedResult as { content: [{ text: string }] }).content[0].text;
+    const detailed = JSON.parse(detailedContent) as { learning: unknown[]; review: unknown[]; total: number };
     console.log(`✅ Current deck due cards:`);
     console.log(`   Learning: ${detailed.learning.length}`);
     console.log(`   Review: ${detailed.review.length}`);
@@ -125,13 +130,15 @@ async function testDeckCurrent() {
     const allDueResult = await client.callTool("findCards", {
       query: "is:due"
     });
-    const allDue = JSON.parse(allDueResult.content[0].text);
+    const allDueContent = (allDueResult as { content: [{ text: string }] }).content[0].text;
+    const allDue = JSON.parse(allDueContent) as unknown[];
     
     // Current deck only
     const currentDueResult = await client.callTool("findCards", {
       query: "deck:current is:due"
     });
-    const currentDue = JSON.parse(currentDueResult.content[0].text);
+    const currentDueContent = (currentDueResult as { content: [{ text: string }] }).content[0].text;
+    const currentDue = JSON.parse(currentDueContent) as unknown[];
     
     console.log(`✅ Comparison:`);
     console.log(`   All decks due: ${allDue.length} cards`);
@@ -145,8 +152,8 @@ async function testDeckCurrent() {
     console.log("   - Can combine deck:current with other filters");
     console.log("   - Properly isolates current deck from all decks");
     
-  } catch (error: any) {
-    console.error("❌ Error:", error.message);
+  } catch (error: unknown) {
+    console.error("❌ Error:", error instanceof Error ? error.message : String(error));
   } finally {
     client.stop();
   }

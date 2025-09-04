@@ -2,7 +2,7 @@
 const ANKI_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const ANKI_API_KEY = process.env.ANKI_API_KEY;
 
-export interface AnkiResponse<T = any> {
+export interface AnkiResponse<T = unknown> {
   result: T;
   error?: string | null;
 }
@@ -10,9 +10,9 @@ export interface AnkiResponse<T = any> {
 /**
  * Helper to call Anki-Connect API directly
  */
-export async function ankiConnect<T = any>(
+export async function ankiConnect<T = unknown>(
   action: string,
-  params: any = {}
+  params: Record<string, unknown> = {}
 ): Promise<T> {
   // Handle client-side pagination for findCards and findNotes
   if ((action === "findCards" || action === "findNotes") && 
@@ -43,7 +43,7 @@ export async function ankiConnect<T = any>(
     }
     
     // Apply pagination to results
-    const allResults = result.result as any[];
+    const allResults = result.result as unknown[];
     const paginatedResults = limit !== undefined 
       ? allResults.slice(offset, offset + limit)
       : allResults.slice(offset);
@@ -122,7 +122,7 @@ export async function verifyAnkiConnection(): Promise<void> {
 /**
  * Normalize tags for comparison
  */
-export function normalizeTags(tags: any): string[] {
+export function normalizeTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
     return tags;
   }
@@ -168,7 +168,7 @@ export async function getAllCards(): Promise<number[]> {
 /**
  * Get deck stats
  */
-export async function getDeckStats(deck: string = "Default"): Promise<any> {
+export async function getDeckStats(deck: string = "Default"): Promise<Record<string, unknown>> {
   return ankiConnect("getDeckStats", { decks: [deck] });
 }
 
@@ -187,13 +187,13 @@ export async function answerCard(
 /**
  * Get next card for review
  */
-export async function getNextCard(): Promise<any> {
+export async function getNextCard(): Promise<{ cardId: number; note: number; deckName: string; queue: number } | undefined> {
   try {
     const cards = await ankiConnect<number[]>("findCards", {
       query: "is:due",
     });
     if (cards && cards.length > 0) {
-      const info = await ankiConnect<any[]>("cardsInfo", {
+      const info = await ankiConnect<Array<{ cardId: number; note: number; deckName: string; queue: number }>>("cardsInfo", {
         cards: [cards[0]],
       });
       return info?.[0];
@@ -255,13 +255,13 @@ export async function getCardsByDeck(deck: string): Promise<number[]> {
 /**
  * Suspend cards
  */
-export async function suspendCards(cardIds: number[]): Promise<any> {
+export async function suspendCards(cardIds: number[]): Promise<boolean> {
   return ankiConnect("suspend", { cards: cardIds });
 }
 
 /**
  * Unsuspend cards
  */
-export async function unsuspendCards(cardIds: number[]): Promise<any> {
+export async function unsuspendCards(cardIds: number[]): Promise<boolean | null> {
   return ankiConnect("unsuspend", { cards: cardIds });
 }

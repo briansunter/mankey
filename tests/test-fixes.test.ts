@@ -21,7 +21,7 @@ describe("Return Value Consistency Tests", () => {
     );
     
     // Get cards from the note
-    const noteInfo = await ankiConnect<any[]>("notesInfo", {
+    const noteInfo = await ankiConnect<Array<{ cards: number[] }>>("notesInfo", {
       notes: [testNoteId],
     });
     testCardIds = noteInfo[0].cards;
@@ -261,9 +261,10 @@ describe("Return Value Consistency Tests", () => {
         // Sync might fail if not configured, but should not throw
         const result = await ankiConnect("sync");
         expect(result).toBeNull();
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         // Expected if sync is not configured
-        expect(error.message).toContain("not configured");
+        expect(errorMessage).toContain("not configured");
       }
     });
 

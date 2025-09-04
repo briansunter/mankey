@@ -16,7 +16,7 @@ async function testMCPServerStructure() {
   });
   
   let responseBuffer = "";
-  const responses: any[] = [];
+  const responses: { result?: { tools: { name: string }[] }; [key: string]: unknown }[] = [];
   let startupSuccess = false;
   
   // Handle server output

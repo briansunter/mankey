@@ -42,7 +42,7 @@ describe("Real Operations Integration Tests", () => {
       expect(updateResult).toBeNull();
 
       // Verify update
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       expect(info[0].fields.Front.value).toBe("What is Model Context Protocol?");
@@ -114,7 +114,7 @@ describe("Real Operations Integration Tests", () => {
       expect(addTagsResult).toBeNull();
 
       // Verify tags added
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ tags: string[]; cards: number[] }>>("notesInfo", {
         notes: noteIds,
       });
       info.forEach((note) => {

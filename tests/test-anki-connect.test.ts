@@ -127,7 +127,7 @@ describe("Anki-Connect Integration Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
       expect(info[0].fields.Front.value).toBe("Updated Question");
@@ -140,7 +140,7 @@ describe("Anki-Connect Integration Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
       expect(info[0].tags).toContain("newtag");
@@ -154,7 +154,7 @@ describe("Anki-Connect Integration Tests", () => {
       });
       expect(result).toBeNull();
 
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
       expect(info[0].tags).not.toContain("newtag");

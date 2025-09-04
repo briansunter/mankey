@@ -126,7 +126,7 @@ async function testDirectly() {
     });
 
     if (response.ok) {
-      const data = await response.json() as { error?: string; result?: any };
+      const data = await response.json() as { error?: string; result?: unknown };
       console.log("✅ Anki-Connect is running, version:", data.result);
     }
   } catch (_error) {
@@ -159,8 +159,8 @@ async function testDirectly() {
     })
   });
 
-  const canAddData = await canAddResponse.json() as { error?: string; result?: any };
-  console.log("Can add test note:", (canAddData as any).result?.[0] ? "✅ Yes" : "❌ No");
+  const canAddData = await canAddResponse.json() as { error?: string; result?: unknown };
+  console.log("Can add test note:", Array.isArray(canAddData.result) && canAddData.result[0] ? "✅ Yes" : "❌ No");
 
   console.log("\n✅ Direct testing completed!");
 }

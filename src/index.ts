@@ -16,14 +16,14 @@ const ANKI_CONNECT_VERSION = 6;
 const DEBUG = process.env.DEBUG === "true";
 
 // Debug logging helper (writes to stderr which shows in stdio)
-function debug(message: string, data?: any) {
+function debug(message: string, data?: unknown) {
   if (DEBUG) {
     console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data) : "");
   }
 }
 
 // Utility function to normalize tags from various formats
-function normalizeTags(tags: any): string[] {
+function normalizeTags(tags: unknown): string[] {
   debug("normalizeTags input:", tags);
   
   // Already an array - return as is
@@ -58,7 +58,7 @@ function normalizeTags(tags: any): string[] {
 }
 
 // Utility to normalize fields from various formats
-function normalizeFields(fields: any): object | undefined {
+function normalizeFields(fields: unknown): object | undefined {
   debug("normalizeFields input:", fields);
   
   if (!fields) {return undefined;}
@@ -94,8 +94,114 @@ function _encodeBase64(data: string | Buffer): string {
   return data.toString("base64");
 }
 
+// Type definitions for Anki-Connect responses
+type AnkiConnectResponses = {
+  deckNames: string[];
+  deckNamesAndIds: Record<string, number>;
+  getDeckStats: Record<string, { new_count: number; learn_count: number; review_count: number; total_in_deck: number }>;
+  getDeckConfig: Record<string, unknown>;
+  createDeck: number;
+  deleteDecks: true;
+  findNotes: number[];
+  findCards: number[];
+  addNote: number;
+  addNotes: (number | null)[];
+  updateNote: true;
+  deleteNotes: true;
+  notesInfo: Array<{ noteId: number; modelName: string; tags: string[]; fields: Record<string, { value: string; order: number }>; cards: number[] }>;
+  cardsInfo: Array<{ cardId: number; queue: number; interval: number; due: number; reps: number; factor: number; fields?: Record<string, { value: string }> }>;
+  getTags: string[];
+  addTags: true;
+  removeTags: true;
+  suspend: true;
+  unsuspend: true;
+  getEaseFactors: number[];
+  setEaseFactors: true;
+  modelNames: string[];
+  modelFieldNames: string[];
+  modelNamesAndIds: Record<string, number>;
+  createModel: Record<string, unknown>;
+  getNumCardsReviewedToday: number;
+  getNumCardsReviewedByDay: Record<string, number>;
+  getCollectionStatsHTML: string;
+  storeMediaFile: string;
+  retrieveMediaFile: string | false;
+  getMediaFilesNames: string[];
+  deleteMediaFile: true;
+  sync: true;
+  getProfiles: string[];
+  loadProfile: true;
+  exportPackage: true;
+  importPackage: true;
+  guiBrowse: number[];
+  guiAddCards: number | null;
+  guiCurrentCard: Record<string, unknown> | null;
+  guiAnswerCard: true;
+  guiDeckOverview: true;
+  guiExitAnki: true;
+  canAddNotes: boolean[];
+  areSuspended: boolean[];
+  areDue: boolean[];
+  getIntervals: number[];
+  cardsToNotes: number[];
+  cardsModTime: number[];
+  answerCards: boolean[];
+  forgetCards: true;
+  relearnCards: true;
+  setSpecificValueOfCard: true;
+  getDecks: string[];
+  changeDeck: true;
+  saveDeckConfig: true;
+  setDeckConfigId: true;
+  cloneDeckConfigId: number;
+  removeDeckConfigId: true;
+  modelFieldsOnTemplates: Record<string, string[]>;
+  modelTemplates: Record<string, { Front: string; Back: string }>;
+  modelStyling: string;
+  updateModelTemplates: Record<string, unknown>;
+  updateModelStyling: true;
+  updateNoteFields: true;
+  getNoteTags: string[];
+  clearUnusedTags: true;
+  replaceTags: true;
+  replaceTagsInAllNotes: true;
+  removeEmptyNotes: number;
+  notesModTime: number[];
+  cardReviews: Array<{ reviewTime: number; cardID: number; ease: number; interval: number; lastInterval: number; factor: number; reviewDuration: number }>;
+  getLatestReviewID: number | null;
+  getReviewsOfCards: Array<{ reviewTime: number; cardID: number; ease: number; interval: number; lastInterval: number; factor: number; reviewDuration: number }>;
+  guiSelectedNotes: number[];
+  guiSelectCard: true;
+  guiEditNote: Record<string, unknown> | null;
+  guiStartCardTimer: true;
+  guiShowQuestion: true;
+  guiShowAnswer: true;
+  guiUndo: boolean;
+  guiDeckBrowser: true;
+  guiDeckReview: string;
+  guiCheckDatabase: string;
+  guiImportFile: Record<string, unknown> | null;
+  getMediaDirPath: string;
+  version: number;
+  requestPermission: { permission: string; version: number };
+  apiReflect: { scopes: string[]; actions: string[] };
+  reloadCollection: true;
+  multi: unknown[];
+  getActiveProfile: string;
+  setDueDate: true;
+  suspended: boolean;
+};
+
 // Anki-Connect API helper with improved error handling
-async function ankiConnect(action: string, params = {}): Promise<any> {
+async function ankiConnect<T extends keyof AnkiConnectResponses>(
+  action: T, 
+  params?: Record<string, unknown>
+): Promise<AnkiConnectResponses[T]>;
+async function ankiConnect(action: string, params?: Record<string, unknown>): Promise<unknown>;
+async function ankiConnect(
+  action: string, 
+  params: Record<string, unknown> = {}
+): Promise<unknown> {
   try {
     const response = await fetch(ANKI_CONNECT_URL, {
       method: "POST",
@@ -103,24 +209,25 @@ async function ankiConnect(action: string, params = {}): Promise<any> {
       body: JSON.stringify({ action, version: ANKI_CONNECT_VERSION, params }),
     });
 
-    const data = await response.json() as { error?: string; result?: any };
+    const data = await response.json() as { error?: string; result?: unknown };
     if (data.error) {
       // Clean up nested error messages
       const cleanError = data.error.replace(/^Anki-Connect: /, "");
       throw new Error(`${action} failed: ${cleanError}`);
     }
     return data.result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new McpError(
       ErrorCode.InternalError,
-      `Anki-Connect: ${error.message}`
+      `Anki-Connect: ${errorMessage}`
     );
   }
 }
 
 // Simplified Zod to JSON Schema converter
-function zodToJsonSchema(schema: z.ZodTypeAny): any {
-  const properties: Record<string, any> = {};
+function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
   if (!(schema instanceof z.ZodObject)) {
@@ -140,11 +247,13 @@ function zodToJsonSchema(schema: z.ZodTypeAny): any {
       type = "object";
     }
 
-    properties[key] = { type };
-    if (items) {properties[key].items = items;}
-    if ((field as any)._def?.description) {
-      properties[key].description = (field as any)._def.description;
+    const prop: Record<string, unknown> = { type };
+    if (items) { prop.items = items; }
+    const fieldDef = (field as { _def?: { description?: string } })._def;
+    if (fieldDef?.description) {
+      prop.description = fieldDef.description;
     }
+    properties[key] = prop;
     if (!field.isOptional()) {required.push(key);}
   });
 
@@ -159,7 +268,8 @@ function zodToJsonSchema(schema: z.ZodTypeAny): any {
 interface ToolDef {
   description: string;
   schema: z.ZodTypeAny;
-  handler: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: (args: any) => Promise<unknown>;
 }
 
 // Define all tools
@@ -273,21 +383,23 @@ const tools: Record<string, ToolDef> = {
       debug("addNotes called with:", notes);
       
       // Parse and normalize notes
-      const parsedNotes = notes.map((note: any) => {
+      const parsedNotes = notes.map((note: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let parsedNote: any = note;
         if (typeof note === "string") {
           try {
-            note = JSON.parse(note);
+            parsedNote = JSON.parse(note);
           } catch (_e) {
             throw new Error("Invalid note format");
           }
         }
         
         // Normalize tags using utility
-        if (note.tags) {
-          note.tags = normalizeTags(note.tags);
+        if (parsedNote.tags) {
+          parsedNote.tags = normalizeTags(parsedNote.tags);
         }
         
-        return note;
+        return parsedNote;
       });
       
       return ankiConnect("addNotes", { notes: parsedNotes });
@@ -369,7 +481,7 @@ const tools: Record<string, ToolDef> = {
     handler: async ({ id, fields, tags }) => {
       debug("updateNote called with:", { id, fields, tags });
       
-      const noteData: any = { 
+      const noteData: { id: number; fields?: object; tags?: string[] } = { 
         id: typeof id === "string" ? parseInt(id, 10) : id
       };
       
@@ -584,9 +696,9 @@ const tools: Record<string, ToolDef> = {
       
       // Categorize by queue type
       const categorized = {
-        learning: [] as any[],
-        review: [] as any[],
-        new: [] as any[],
+        learning: [] as Array<{ cardId: number; queue: number }>,
+        review: [] as Array<{ cardId: number; queue: number }>,
+        new: [] as Array<{ cardId: number; queue: number }>,
       };
       
       for (const card of cardInfo) {
@@ -809,8 +921,22 @@ const tools: Record<string, ToolDef> = {
       const cardInfo = await ankiConnect("cardsInfo", { cards: allCardIds });
       
       // Separate by actual queue type
-      const learning = [];
-      const review = [];
+      const learning: Array<{
+        cardId: number;
+        front: string;
+        interval: number;
+        due: number;
+        queue: string;
+        reps: number;
+      }> = [];
+      const review: Array<{
+        cardId: number;
+        front: string;
+        interval: number;
+        due: number;
+        queue: string;
+        ease: number;
+      }> = [];
       
       for (const card of cardInfo) {
         // Queue meanings:
@@ -1102,7 +1228,7 @@ const tools: Record<string, ToolDef> = {
       })).describe("Card answers"),
     }),
     handler: async ({ answers }) => ankiConnect("answerCards", { 
-      answers: answers.map((a: any) => ({
+      answers: answers.map((a: { cardId: string | number; ease: number }) => ({
         cardId: typeof a.cardId === "string" ? parseInt(a.cardId, 10) : a.cardId,
         ease: a.ease
       }))
@@ -1181,7 +1307,7 @@ const tools: Record<string, ToolDef> = {
   saveDeckConfig: {
     description: "Updates deck configuration group with new settings. Config includes: new cards/day, review limits, ease factors, learning steps, graduation intervals, leech threshold, and more. Changes affect all decks using this config group. Returns true on success. Be careful - can significantly impact learning",
     schema: z.object({
-      config: z.record(z.any()).describe("Deck configuration object"),
+      config: z.record(z.unknown()).describe("Deck configuration object"),
     }),
     handler: async ({ config }) => ankiConnect("saveDeckConfig", { config }),
   },
@@ -1509,7 +1635,7 @@ const tools: Record<string, ToolDef> = {
     schema: z.object({
       actions: z.array(z.object({
         action: z.string(),
-        params: z.any().optional(),
+        params: z.unknown().optional(),
         version: z.number().optional(),
       })).describe("Actions to execute"),
     }),
@@ -1588,10 +1714,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         text: JSON.stringify(result, null, 2),
       }],
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     throw new McpError(
       ErrorCode.InternalError,
-      error.message || "Unknown error"
+      errorMessage
     );
   }
 });

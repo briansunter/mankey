@@ -19,7 +19,7 @@ const results: TestResult[] = [];
 
 // Simple MCP client
 class SimpleMCPClient {
-  private process: any;
+  private process: import("child_process").ChildProcess | null = null;
   private responseBuffer = "";
   private requestId = 1;
   
@@ -28,18 +28,18 @@ class SimpleMCPClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
     
-    this.process.stdout.on("data", (data: Buffer) => {
+    this.process.stdout?.on("data", (data: Buffer) => {
       this.responseBuffer += data.toString();
     });
     
-    this.process.stderr.on("data", (_data: Buffer) => {
+    this.process.stderr?.on("data", (_data: Buffer) => {
       // Ignore server startup messages
     });
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     const request = {
       jsonrpc: "2.0",
       id: this.requestId++,
@@ -47,7 +47,9 @@ class SimpleMCPClient {
       params: { name, arguments: args }
     };
     
-    this.process.stdin.write(JSON.stringify(request) + "\n");
+    if (this.process?.stdin) {
+      this.process.stdin.write(JSON.stringify(request) + "\n");
+    }
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const lines = this.responseBuffer.split("\n");
@@ -72,7 +74,7 @@ class SimpleMCPClient {
     return null;
   }
   
-  async listTools(): Promise<any[]> {
+  async listTools(): Promise<{ name: string; [key: string]: unknown }[]> {
     const request = {
       jsonrpc: "2.0",
       id: this.requestId++,
@@ -80,7 +82,9 @@ class SimpleMCPClient {
       params: {}
     };
     
-    this.process.stdin.write(JSON.stringify(request) + "\n");
+    if (this.process?.stdin) {
+      this.process.stdin.write(JSON.stringify(request) + "\n");
+    }
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const lines = this.responseBuffer.split("\n");
@@ -107,14 +111,20 @@ class SimpleMCPClient {
   }
 }
 
+// Helper function to extract content from MCP result
+function extractContent(result: unknown): string {
+  const mcpResult = result as { content: [{ text: string }] };
+  return mcpResult.content[0].text;
+}
+
 // Test function
 async function runTest(
   client: SimpleMCPClient,
   category: string,
   test: string,
   toolName: string,
-  args: any,
-  validate?: (_result: any) => boolean
+  args: Record<string, unknown>,
+  validate?: (_result: unknown) => boolean
 ): Promise<void> {
   try {
     const result = await client.callTool(toolName, args);
@@ -129,9 +139,9 @@ async function runTest(
     const icon = passed ? "✅" : "❌";
     console.log(`${icon} [${category}] ${test}`);
     
-  } catch (error: any) {
-    results.push({ category, test, passed: false, error: error.message });
-    console.log(`❌ [${category}] ${test}: ${error.message}`);
+  } catch (error: unknown) {
+    results.push({ category, test, passed: false, error: error instanceof Error ? error.message : String(error) });
+    console.log(`❌ [${category}] ${test}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -177,19 +187,19 @@ async function validateMCPServer() {
     
     await runTest(client, "Deck", "List decks", "deckNames", {}, 
       (r) => {
-        const decks = JSON.parse(r.content[0].text);
+        const decks = JSON.parse(extractContent(r));
         return Array.isArray(decks) && decks.length > 0;
       });
     
     const testDeckName = `MCP_Validation_${Date.now()}`;
     await runTest(client, "Deck", "Create deck", "createDeck", 
       { deck: testDeckName },
-      (r) => JSON.parse(r.content[0].text) > 0);
+      (r) => JSON.parse(extractContent(r)) > 0);
     
     await runTest(client, "Deck", "Get deck stats", "getDeckStats",
       { decks: ["Default"] },
       (r) => {
-        const stats = JSON.parse(r.content[0].text);
+        const stats = JSON.parse(extractContent(r));
         return typeof stats === "object";
       });
     
@@ -216,7 +226,7 @@ async function validateMCPServer() {
       tags: [`validation-${timestamp}`],
       allowDuplicate: true
     }, (r) => {
-      const id = JSON.parse(r.content[0].text);
+      const id = JSON.parse(extractContent(r)) as number;
       testNoteId = id;
       return id > 0;
     });
@@ -224,7 +234,7 @@ async function validateMCPServer() {
     await runTest(client, "Note", "Find notes", "findNotes",
       { query: `tag:validation-${timestamp}` },
       (r) => {
-        const notes = JSON.parse(r.content[0].text);
+        const notes = JSON.parse(extractContent(r));
         return Array.isArray(notes) && notes.length === 1;
       });
     
@@ -233,11 +243,11 @@ async function validateMCPServer() {
         id: testNoteId,
         fields: { Back: "Updated Answer" },
         tags: ["updated", "validation"]
-      }, (r) => r.content[0].text.includes("null"));
+      }, (r) => extractContent(r).includes("null"));
       
       await runTest(client, "Note", "Delete note", "deleteNotes",
         { notes: [testNoteId] },
-        (r) => r.content[0].text.includes("null"));
+        (r) => extractContent(r).includes("null"));
     }
     
     // 4. Test Card Operations
@@ -247,7 +257,7 @@ async function validateMCPServer() {
     await runTest(client, "Card", "Find cards", "findCards",
       { query: "deck:Default" },
       (r) => {
-        const cards = JSON.parse(r.content[0].text);
+        const cards = JSON.parse(extractContent(r));
         return Array.isArray(cards);
       });
     
@@ -257,14 +267,14 @@ async function validateMCPServer() {
     
     await runTest(client, "Model", "List models", "modelNames", {},
       (r) => {
-        const models = JSON.parse(r.content[0].text);
+        const models = JSON.parse(extractContent(r));
         return Array.isArray(models) && models.includes("Basic");
       });
     
     await runTest(client, "Model", "Get field names", "modelFieldNames",
       { modelName: "Basic" },
       (r) => {
-        const fields = JSON.parse(r.content[0].text);
+        const fields = JSON.parse(extractContent(r));
         return Array.isArray(fields) && fields.includes("Front");
       });
     
@@ -275,7 +285,7 @@ async function validateMCPServer() {
     await runTest(client, "Stats", "Cards reviewed today", 
       "getNumCardsReviewedToday", {},
       (r) => {
-        const num = JSON.parse(r.content[0].text);
+        const num = JSON.parse(extractContent(r));
         return typeof num === "number";
       });
     
@@ -285,7 +295,7 @@ async function validateMCPServer() {
     
     await runTest(client, "Tags", "Get all tags", "getTags", {},
       (r) => {
-        const tags = JSON.parse(r.content[0].text);
+        const tags = JSON.parse(extractContent(r));
         return Array.isArray(tags);
       });
     
@@ -299,11 +309,11 @@ async function validateMCPServer() {
     await runTest(client, "Media", "Store file", "storeMediaFile", {
       filename: testFileName,
       data: testContent
-    }, (r) => r.content[0].text.includes(testFileName));
+    }, (r) => extractContent(r).includes(testFileName));
     
     await runTest(client, "Media", "Delete file", "deleteMediaFile",
       { filename: testFileName },
-      (r) => r.content[0].text.includes("null"));
+      (r) => extractContent(r).includes("null"));
     
     // Generate Report
     console.log("\n" + "=" .repeat(60));

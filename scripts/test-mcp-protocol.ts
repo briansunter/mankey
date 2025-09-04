@@ -12,22 +12,22 @@ interface MCPRequest {
   jsonrpc: "2.0";
   id: number;
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 interface MCPResponse {
   jsonrpc: "2.0";
   id: number;
-  result?: any;
+  result?: unknown;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
 class MCPTestClient {
-  private process: any;
+  private process: import("child_process").ChildProcess | null = null;
   private requestId: number = 1;
   private responseHandlers: Map<number, (response: MCPResponse) => void> = new Map();
   private buffer: string = "";
@@ -40,13 +40,13 @@ class MCPTestClient {
     });
 
     // Handle stdout (responses from server)
-    this.process.stdout.on("data", (data: Buffer) => {
+    this.process.stdout?.on("data", (data: Buffer) => {
       this.buffer += data.toString();
       this.processBuffer();
     });
 
     // Handle stderr (server logs)
-    this.process.stderr.on("data", (data: Buffer) => {
+    this.process.stderr?.on("data", (data: Buffer) => {
       const message = data.toString();
       if (!message.includes("running on stdio")) {
         console.log("Server log:", message.trim());
@@ -87,7 +87,7 @@ class MCPTestClient {
     }
   }
 
-  async sendRequest(method: string, params?: any): Promise<any> {
+  async sendRequest(method: string, params?: Record<string, unknown>): Promise<unknown> {
     const id = this.requestId++;
     const request: MCPRequest = {
       jsonrpc: "2.0",
@@ -109,7 +109,9 @@ class MCPTestClient {
       // Send request
       const message = JSON.stringify(request);
       const fullMessage = `Content-Length: ${message.length}\r\n\r\n${message}\n`;
-      this.process.stdin.write(fullMessage);
+      if (this.process?.stdin) {
+        this.process.stdin.write(fullMessage);
+      }
 
       // Timeout after 5 seconds
       setTimeout(() => {
@@ -150,17 +152,18 @@ async function testInitialization(client: MCPTestClient) {
       }
     });
     
+    const initResponse = initResult as { serverInfo?: { name: string; version: string }; capabilities?: Record<string, unknown> };
     console.log("✅ Initialize successful");
-    console.log(`   Server: ${initResult.serverInfo?.name} v${initResult.serverInfo?.version}`);
-    console.log(`   Capabilities:`, Object.keys(initResult.capabilities || {}));
+    console.log(`   Server: ${initResponse.serverInfo?.name} v${initResponse.serverInfo?.version}`);
+    console.log(`   Capabilities:`, Object.keys(initResponse.capabilities || {}));
     
     // Send initialized notification
     await client.sendRequest("notifications/initialized", {});
     console.log("✅ Initialized notification sent");
     
     return true;
-  } catch (error: any) {
-    console.error("❌ Initialization failed:", error.message);
+  } catch (error: unknown) {
+    console.error("❌ Initialization failed:", error instanceof Error ? error.message : String(error));
     return false;
   }
 }
@@ -172,12 +175,13 @@ async function testListTools(client: MCPTestClient) {
   try {
     const result = await client.sendRequest("tools/list", {});
     
-    console.log(`✅ Found ${result.tools?.length || 0} tools`);
+    const toolsResult = result as { tools?: { name: string }[] };
+    console.log(`✅ Found ${toolsResult.tools?.length || 0} tools`);
     
     // Group tools by category
     const categories: { [key: string]: string[] } = {};
     
-    for (const tool of result.tools || []) {
+    for (const tool of toolsResult.tools || []) {
       // Categorize based on tool name patterns
       let category = "Other";
       if (tool.name.includes("deck") || tool.name.includes("Deck")) {
@@ -202,7 +206,9 @@ async function testListTools(client: MCPTestClient) {
       if (!categories[category]) {
         categories[category] = [];
       }
-      categories[category]!.push(tool.name);
+      if (categories[category]) {
+        categories[category].push(tool.name);
+      }
     }
     
     console.log("\n📊 Tools by Category:");
@@ -214,14 +220,14 @@ async function testListTools(client: MCPTestClient) {
       }
     }
     
-    return result.tools || [];
-  } catch (error: any) {
-    console.error("❌ List tools failed:", error.message);
+    return toolsResult.tools || [];
+  } catch (error: unknown) {
+    console.error("❌ List tools failed:", error instanceof Error ? error.message : String(error));
     return [];
   }
 }
 
-async function testCallTool(client: MCPTestClient, toolName: string, args: any = {}) {
+async function testCallTool(client: MCPTestClient, toolName: string, args: Record<string, unknown> = {}) {
   console.log(`\n🔨 Testing Tool: ${toolName}`);
   console.log("=" .repeat(50));
 
@@ -231,10 +237,11 @@ async function testCallTool(client: MCPTestClient, toolName: string, args: any =
       arguments: args
     });
     
+    const toolResult = result as { content?: [{ type: string; text: string }] };
     console.log(`✅ Tool ${toolName} executed successfully`);
     
-    if (result.content && result.content.length > 0) {
-      const content = result.content[0];
+    if (toolResult.content && toolResult.content.length > 0) {
+      const content = toolResult.content[0];
       if (content.type === "text") {
         try {
           const data = JSON.parse(content.text);
@@ -253,8 +260,8 @@ async function testCallTool(client: MCPTestClient, toolName: string, args: any =
     }
     
     return true;
-  } catch (error: any) {
-    console.error(`❌ Tool ${toolName} failed:`, error.message);
+  } catch (error: unknown) {
+    console.error(`❌ Tool ${toolName} failed:`, error instanceof Error ? error.message : String(error));
     return false;
   }
 }
@@ -324,8 +331,8 @@ async function testErrorHandling(client: MCPTestClient) {
       arguments: {}
     });
     console.log("❌ Should have thrown error for non-existent tool");
-  } catch (error: any) {
-    console.log("✅ Correctly handled non-existent tool:", error.message);
+  } catch (error: unknown) {
+    console.log("✅ Correctly handled non-existent tool:", error instanceof Error ? error.message : String(error));
   }
 
   // Test invalid parameters
@@ -335,8 +342,8 @@ async function testErrorHandling(client: MCPTestClient) {
       arguments: { invalidParam: "test" }
     });
     console.log("❌ Should have thrown error for invalid parameters");
-  } catch (error: any) {
-    console.log("✅ Correctly handled invalid parameters:", error.message);
+  } catch (error: unknown) {
+    console.log("✅ Correctly handled invalid parameters:", error instanceof Error ? error.message : String(error));
   }
 
   return true;

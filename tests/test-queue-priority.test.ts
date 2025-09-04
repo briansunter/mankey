@@ -95,11 +95,11 @@ describe("Queue Priority Tests", () => {
 
       if (nextCards && nextCards.length > 0) {
         // Learning cards (queue=1 or queue=3) should come first
-        const queues = nextCards.map((c: any) => c.queue);
+        const queues = nextCards.map((c: { queue: number }) => c.queue);
         const hasLearningCard = queues.some((q: number) => q === 1 || q === 3);
         
         if (hasLearningCard) {
-          const firstNonNewIndex = nextCards.findIndex((c: any) => c.queue !== 0);
+          const firstNonNewIndex = nextCards.findIndex((c: { queue: number }) => c.queue !== 0);
           if (firstNonNewIndex >= 0) {
             const firstNonNew = nextCards[firstNonNewIndex];
             expect([1, 3]).toContain(firstNonNew.queue);
@@ -115,7 +115,7 @@ describe("Queue Priority Tests", () => {
       });
 
       if (nextCards && nextCards.length > 0) {
-        nextCards.forEach((card: any) => {
+        nextCards.forEach((card: { queue: number }) => {
           expect(card.queue).toBeDefined();
           expect([0, 1, 2, 3, 4]).toContain(card.queue);
           // Queue types: 0=new, 1=learning, 2=review, 3=day learning, 4=preview
@@ -136,8 +136,8 @@ describe("Queue Priority Tests", () => {
 
       if (page1 && page2 && page1.length > 0 && page2.length > 0) {
         // Verify no overlap
-        const page1Ids = new Set(page1.map((c: any) => c.cardId));
-        const page2Ids = new Set(page2.map((c: any) => c.cardId));
+        const page1Ids = new Set(page1.map((c: { cardId: number }) => c.cardId));
+        const page2Ids = new Set(page2.map((c: { cardId: number }) => c.cardId));
         const intersection = [...page1Ids].filter((id) => page2Ids.has(id));
         expect(intersection).toHaveLength(0);
       }
@@ -172,7 +172,7 @@ describe("Queue Priority Tests", () => {
       });
 
       if (dueCards && dueCards.cards && dueCards.cards.length > 0) {
-        dueCards.cards.forEach((card: any) => {
+        dueCards.cards.forEach((card: { fields: Record<string, string>; modelName?: string }) => {
           expect(card.fields).toBeDefined();
           expect(typeof card.fields).toBe("object");
           // Should have Front and Back fields for Basic model
@@ -199,7 +199,7 @@ describe("Queue Priority Tests", () => {
       const cardId = cards[0];
 
       // Initially should be new (queue=0)
-      let cardInfo = await ankiConnect<any[]>("cardsInfo", {
+      let cardInfo = await ankiConnect<Array<{ queue: number }>>("cardsInfo", {
         cards: [cardId],
       });
       expect(cardInfo[0].queue).toBe(0);
@@ -209,7 +209,7 @@ describe("Queue Priority Tests", () => {
         await answerCard(cardId, 1);
       }
       
-      cardInfo = await ankiConnect<any[]>("cardsInfo", {
+      cardInfo = await ankiConnect<Array<{ queue: number }>>("cardsInfo", {
         cards: [cardId],
       });
       expect([1, 3]).toContain(cardInfo[0].queue); // Learning or day learning
@@ -239,7 +239,7 @@ describe("Queue Priority Tests", () => {
       
       if (nextCards && nextCards.length > 0) {
         const suspendedFound = nextCards.some(
-          (c: any) => cards.includes(c.cardId)
+          (c: { cardId: number }) => cards.includes(c.cardId)
         );
         expect(suspendedFound).toBe(false);
       }
@@ -263,7 +263,7 @@ describe("Queue Priority Tests", () => {
       expect(deckCards.length).toBeGreaterThan(0);
 
       // Verify the cards belong to the correct deck
-      const cardInfo = await ankiConnect<any[]>("cardsInfo", {
+      const cardInfo = await ankiConnect<Array<{ deckName: string }>>("cardsInfo", {
         cards: deckCards,
       });
       cardInfo.forEach((card) => {

@@ -4,10 +4,10 @@
  * Test that string IDs are properly converted to numbers
  */
 
-import { spawn } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 
 class TestClient {
-  private process: any;
+  private process: ChildProcess | null = null;
   private responseBuffer = "";
   private requestId = 1;
   
@@ -16,18 +16,18 @@ class TestClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
     
-    this.process.stdout.on("data", (data: Buffer) => {
+    this.process.stdout?.on("data", (data: Buffer) => {
       this.responseBuffer += data.toString();
     });
     
-    this.process.stderr.on("data", (data: Buffer) => {
+    this.process.stderr?.on("data", (data: Buffer) => {
       console.error("Server:", data.toString());
     });
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     const request = {
       jsonrpc: "2.0",
       id: this.requestId++,
@@ -35,7 +35,7 @@ class TestClient {
       params: { name, arguments: args }
     };
     
-    this.process.stdin.write(JSON.stringify(request) + "\n");
+    this.process?.stdin?.write(JSON.stringify(request) + "\n");
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const lines = this.responseBuffer.split("\n");
@@ -74,7 +74,7 @@ async function testStringIds() {
     console.log("\n1️⃣ Finding cards...");
     const findResult = await client.callTool("findCards", { 
       query: "deck:Default" 
-    });
+    }) as { content: Array<{ text: string }> };
     const cardIds = JSON.parse(findResult.content[0].text);
     console.log(`✅ Found ${cardIds.length} cards`);
     
@@ -86,11 +86,11 @@ async function testStringIds() {
       try {
         const cardsInfoResult = await client.callTool("cardsInfo", { 
           cards: stringIds 
-        });
+        }) as { content: Array<{ text: string }> };
         const info = JSON.parse(cardsInfoResult.content[0].text);
         console.log(`✅ cardsInfo handled string IDs correctly (got ${info.length} cards)`);
-      } catch (error: any) {
-        console.error(`❌ cardsInfo failed with string IDs: ${error.message}`);
+      } catch (error: unknown) {
+        console.error(`❌ cardsInfo failed with string IDs: ${error instanceof Error ? error.message : String(error)}`);
       }
       
       // Test with mixed IDs (strings and numbers)
@@ -100,11 +100,11 @@ async function testStringIds() {
       try {
         const mixedResult = await client.callTool("cardsInfo", { 
           cards: mixedIds 
-        });
+        }) as { content: Array<{ text: string }> };
         const mixedInfo = JSON.parse(mixedResult.content[0].text);
         console.log(`✅ cardsInfo handled mixed IDs correctly (got ${mixedInfo.length} cards)`);
-      } catch (error: any) {
-        console.error(`❌ cardsInfo failed with mixed IDs: ${error.message}`);
+      } catch (error: unknown) {
+        console.error(`❌ cardsInfo failed with mixed IDs: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
     
@@ -112,7 +112,7 @@ async function testStringIds() {
     console.log("\n4️⃣ Finding notes...");
     const notesResult = await client.callTool("findNotes", { 
       query: "deck:Default" 
-    });
+    }) as { content: Array<{ text: string }> };
     const noteIds = JSON.parse(notesResult.content[0].text);
     
     if (noteIds.length > 0) {
@@ -122,18 +122,18 @@ async function testStringIds() {
       try {
         const notesInfoResult = await client.callTool("notesInfo", { 
           notes: stringNoteIds 
-        });
+        }) as { content: Array<{ text: string }> };
         const info = JSON.parse(notesInfoResult.content[0].text);
         console.log(`✅ notesInfo handled string IDs correctly (got ${info.length} notes)`);
-      } catch (error: any) {
-        console.error(`❌ notesInfo failed with string IDs: ${error.message}`);
+      } catch (error: unknown) {
+        console.error(`❌ notesInfo failed with string IDs: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
     
     console.log("\n✨ String ID conversion test completed!");
     
-  } catch (error: any) {
-    console.error("❌ Error:", error.message);
+  } catch (error: unknown) {
+    console.error("❌ Error:", error instanceof Error ? error.message : String(error));
   } finally {
     client.stop();
   }

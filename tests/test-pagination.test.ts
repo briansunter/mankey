@@ -163,8 +163,8 @@ describe("Pagination Tests", () => {
         
         // Verify different cards if available
         if (page2 && page2.length > 0) {
-          const page1Ids = new Set(page1.map((c: any) => c.cardId));
-          const page2Ids = new Set(page2.map((c: any) => c.cardId));
+          const page1Ids = new Set(page1.map((c: { cardId: number }) => c.cardId));
+          const page2Ids = new Set(page2.map((c: { cardId: number }) => c.cardId));
           const intersection = [...page1Ids].filter((id) => page2Ids.has(id));
           expect(intersection).toHaveLength(0);
         }

@@ -81,7 +81,7 @@ class TestMCPClient {
     log("✅ MCP Server started", colors.green);
   }
 
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     if (!this.process) {
       throw new Error("Client not started");
     }
@@ -128,7 +128,7 @@ class TestMCPClient {
     return null;
   }
 
-  async listTools(): Promise<any[]> {
+  async listTools(): Promise<{ name: string; [key: string]: unknown }[]> {
     if (!this.process) {
       throw new Error("Client not started");
     }
@@ -169,12 +169,13 @@ class TestMCPClient {
 }
 
 // Test utilities
-function parseResult(result: any): any {
-  if (!result?.content?.[0]?.text) {return null;}
+function parseResult(result: unknown): unknown {
+  const mcpResult = result as { content?: [{ text: string }] };
+  if (!mcpResult?.content?.[0]?.text) {return null;}
   try {
-    return JSON.parse(result.content[0].text);
+    return JSON.parse(mcpResult.content[0].text);
   } catch {
-    return result.content[0].text;
+    return mcpResult.content[0].text;
   }
 }
 
@@ -187,14 +188,14 @@ interface TestCategory {
 interface TestCase {
   name: string;
   tool: string;
-  args: any;
-  validate?: (_result: any) => boolean;
+  args: Record<string, unknown>;
+  validate?: (_result: unknown) => boolean;
   skipCleanup?: boolean;
   storeResult?: string;
 }
 
 // Shared test data storage
-const testData: Record<string, any> = {};
+const testData: Record<string, unknown> = {};
 
 // Define all test cases
 const testCategories: TestCategory[] = [
@@ -204,9 +205,9 @@ const testCategories: TestCategory[] = [
       {
         name: "List all tools",
         tool: "list",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (result) => {
-          const tools = result as any[];
+          const tools = result as { name: string }[];
           testData.toolCount = tools.length;
           return tools.length > 40; // Should have 40+ tools
         }
@@ -219,7 +220,7 @@ const testCategories: TestCategory[] = [
       {
         name: "List existing decks",
         tool: "deckNames",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const decks = parseResult(r);
           return Array.isArray(decks) && decks.length > 0;
@@ -257,10 +258,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Get deck names and IDs",
         tool: "deckNamesAndIds",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const mapping = parseResult(r);
-          return typeof mapping === "object" && Object.keys(mapping).length > 0;
+          return typeof mapping === "object" && mapping !== null && Object.keys(mapping).length > 0;
         }
       }
     ]
@@ -271,7 +272,7 @@ const testCategories: TestCategory[] = [
       {
         name: "List model names",
         tool: "modelNames",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const models = parseResult(r);
           return Array.isArray(models) && models.includes("Basic");
@@ -291,10 +292,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Get model names and IDs",
         tool: "modelNamesAndIds",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const mapping = parseResult(r);
-          return typeof mapping === "object" && Object.keys(mapping).length > 0;
+          return typeof mapping === "object" && mapping !== null && Object.keys(mapping).length > 0;
         }
       }
     ]
@@ -334,7 +335,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Get note information",
         tool: "notesInfo",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testNoteId) {return false;}
           const info = parseResult(r);
@@ -344,7 +345,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Update note fields",
         tool: "updateNote",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
@@ -354,7 +355,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Add tags to note",
         tool: "addTags",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
@@ -364,7 +365,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Get all tags",
         tool: "getTags",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const tags = parseResult(r);
           return Array.isArray(tags);
@@ -373,7 +374,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Remove tags from note",
         tool: "removeTags",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testNoteId) {return false;}
           const result = parseResult(r);
@@ -399,9 +400,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Get card information",
         tool: "cardsInfo",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
+          const cardIds = testData.testCardIds as unknown[];
+          if (!cardIds || cardIds.length === 0) {return true;}
           const info = parseResult(r);
           return Array.isArray(info);
         }
@@ -409,9 +411,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Get ease factors",
         tool: "getEaseFactors",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
+          const cardIds = testData.testCardIds as unknown[];
+          if (!cardIds || cardIds.length === 0) {return true;}
           const factors = parseResult(r);
           return Array.isArray(factors) || typeof factors === "object";
         }
@@ -419,9 +422,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Suspend cards",
         tool: "suspend",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
+          const cardIds = testData.testCardIds as unknown[];
+          if (!cardIds || cardIds.length === 0) {return true;}
           const result = parseResult(r);
           return result === true || result === null;
         }
@@ -429,9 +433,10 @@ const testCategories: TestCategory[] = [
       {
         name: "Unsuspend cards",
         tool: "unsuspend",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
-          if (!testData.testCardIds || testData.testCardIds.length === 0) {return true;}
+          const cardIds = testData.testCardIds as unknown[];
+          if (!cardIds || cardIds.length === 0) {return true;}
           const result = parseResult(r);
           return result === true || result === null;
         }
@@ -444,7 +449,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Cards reviewed today",
         tool: "getNumCardsReviewedToday",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const num = parseResult(r);
           return typeof num === "number" && num >= 0;
@@ -453,7 +458,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Cards reviewed by day",
         tool: "getNumCardsReviewedByDay",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           const data = parseResult(r);
           return typeof data === "object" || Array.isArray(data);
@@ -490,7 +495,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Delete media file",
         tool: "deleteMediaFile",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testMediaFile) {return true;}
           const result = parseResult(r);
@@ -505,7 +510,7 @@ const testCategories: TestCategory[] = [
       {
         name: "Delete test notes",
         tool: "deleteNotes",
-        args: {},
+        args: {} as Record<string, unknown>,
         validate: (r) => {
           if (!testData.testNoteId) {return true;}
           const result = parseResult(r);
@@ -602,14 +607,26 @@ async function runManualTests(debugMode = false) {
               notes: [testData.testNoteId],
               tags: "additional_tag"
             };
-          } else if (test.tool === "cardsInfo" && testData.testCardIds?.length > 0) {
-            args = { cards: testData.testCardIds.slice(0, 1) };
-          } else if (test.tool === "getEaseFactors" && testData.testCardIds?.length > 0) {
-            args = { cards: testData.testCardIds };
-          } else if (test.tool === "suspend" && testData.testCardIds?.length > 0) {
-            args = { cards: testData.testCardIds };
-          } else if (test.tool === "unsuspend" && testData.testCardIds?.length > 0) {
-            args = { cards: testData.testCardIds };
+          } else if (test.tool === "cardsInfo") {
+            const cardIds = testData.testCardIds as unknown[];
+            if (cardIds?.length > 0) {
+              args = { cards: cardIds.slice(0, 1) };
+            }
+          } else if (test.tool === "getEaseFactors") {
+            const cardIds = testData.testCardIds as unknown[];
+            if (cardIds?.length > 0) {
+              args = { cards: cardIds };
+            }
+          } else if (test.tool === "suspend") {
+            const cardIds = testData.testCardIds as unknown[];
+            if (cardIds?.length > 0) {
+              args = { cards: cardIds };
+            }
+          } else if (test.tool === "unsuspend") {
+            const cardIds = testData.testCardIds as unknown[];
+            if (cardIds?.length > 0) {
+              args = { cards: cardIds };
+            }
           } else if (test.tool === "deleteMediaFile" && testData.testMediaFile) {
             args = { filename: testData.testMediaFile };
           } else if (test.tool === "deleteNotes" && testData.testNoteId) {
@@ -640,13 +657,13 @@ async function runManualTests(debugMode = false) {
           logTest(test.name, passed, details);
           results.push({ category: category.name, test: test.name, passed });
           
-        } catch (error: any) {
-          logTest(test.name, false, `Error: ${error.message}`);
+        } catch (error: unknown) {
+          logTest(test.name, false, `Error: ${error instanceof Error ? error.message : String(error)}`);
           results.push({ 
             category: category.name, 
             test: test.name, 
             passed: false, 
-            error: error.message 
+            error: error instanceof Error ? error.message : String(error)
           });
         }
       }
@@ -673,7 +690,8 @@ async function runManualTests(debugMode = false) {
       if (!categoryStats.has(result.category)) {
         categoryStats.set(result.category, { passed: 0, total: 0 });
       }
-      const stats = categoryStats.get(result.category)!;
+      const stats = categoryStats.get(result.category);
+      if (!stats) {continue;}
       stats.total++;
       if (result.passed) {stats.passed++;}
     }
@@ -712,8 +730,8 @@ async function runManualTests(debugMode = false) {
     }
     log("=".repeat(60));
     
-  } catch (error: any) {
-    log(`\n❌ Fatal Error: ${error.message}`, colors.red + colors.bold);
+  } catch (error: unknown) {
+    log(`\n❌ Fatal Error: ${error instanceof Error ? error.message : String(error)}`, colors.red + colors.bold);
   } finally {
     client.stop();
   }

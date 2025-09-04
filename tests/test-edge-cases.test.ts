@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, beforeAll } from "bun:test";
 import {
   ankiConnect,
   createTestNote,
@@ -30,7 +30,7 @@ describe("Edge Cases and Additional Coverage", () => {
         ["long-content"]
       );
       
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       
@@ -46,7 +46,7 @@ describe("Edge Cases and Additional Coverage", () => {
         ["html-content"]
       );
       
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       
@@ -62,7 +62,7 @@ describe("Edge Cases and Additional Coverage", () => {
         ["unicode"]
       );
       
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       
@@ -95,7 +95,7 @@ describe("Edge Cases and Additional Coverage", () => {
       
       expect(Array.isArray(modTimes)).toBe(true);
       expect(modTimes.length).toBe(cards.length);
-      modTimes.forEach((time: any) => {
+      modTimes.forEach((time: { cardId: number; mod: number }) => {
         expect(time).toHaveProperty("cardId");
         expect(time).toHaveProperty("mod");
         expect(typeof time.mod).toBe("number");
@@ -113,7 +113,7 @@ describe("Edge Cases and Additional Coverage", () => {
       
       expect(Array.isArray(modTimes)).toBe(true);
       expect(modTimes.length).toBe(noteIds.length);
-      modTimes.forEach((time: any) => {
+      modTimes.forEach((time: { noteId: number; mod: number }) => {
         expect(time).toHaveProperty("noteId");
         expect(time).toHaveProperty("mod");
         expect(typeof time.mod).toBe("number");
@@ -265,7 +265,7 @@ describe("Edge Cases and Additional Coverage", () => {
       expect(result).toBeNull();
       
       // Verify replacement
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: noteIds,
       });
       
@@ -353,7 +353,7 @@ describe("Edge Cases and Additional Coverage", () => {
       expect(result).toBeNull();
       
       // Verify update
-      const info = await ankiConnect<any[]>("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
       
