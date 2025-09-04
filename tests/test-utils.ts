@@ -7,6 +7,16 @@ export interface AnkiResponse<T = unknown> {
   error?: string | null;
 }
 
+export interface PaginatedResponse {
+  cards?: unknown[];
+  notes?: unknown[];
+  total: number;
+  hasMore: boolean;
+  offset: number;
+  limit?: number;
+  nextOffset: number;
+}
+
 /**
  * Helper to call Anki-Connect API directly
  */
@@ -17,8 +27,8 @@ export async function ankiConnect<T = unknown>(
   // Handle client-side pagination for findCards and findNotes
   if ((action === "findCards" || action === "findNotes") && 
       (params.offset !== undefined || params.limit !== undefined)) {
-    const offset = params.offset || 0;
-    const limit = params.limit;
+    const offset = typeof params.offset === 'number' ? params.offset : 0;
+    const limit = typeof params.limit === 'number' ? params.limit : undefined;
     
     // Remove pagination params before sending to Anki-Connect
     const cleanParams = { ...params };
@@ -50,14 +60,21 @@ export async function ankiConnect<T = unknown>(
     
     // Return paginated response with metadata
     const responseKey = action === "findCards" ? "cards" : "notes";
-    return {
-      [responseKey]: paginatedResults,
+    const paginatedResponse: PaginatedResponse = {
       total: allResults.length,
-      hasMore: offset + (limit || 0) < allResults.length,
+      hasMore: limit !== undefined ? offset + limit < allResults.length : false,
       offset,
       limit,
-      nextOffset: offset + (limit || 0)
-    } as T;
+      nextOffset: limit !== undefined ? offset + limit : offset + allResults.length
+    };
+    
+    if (responseKey === "cards") {
+      paginatedResponse.cards = paginatedResults;
+    } else {
+      paginatedResponse.notes = paginatedResults;
+    }
+    
+    return paginatedResponse as T;
   }
   
   // Standard API call without pagination
@@ -130,7 +147,11 @@ export function normalizeTags(tags: unknown): string[] {
     if (tags.startsWith("[") && tags.endsWith("]")) {
       try {
         const parsed = JSON.parse(tags);
-        return Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+          // Flatten nested arrays and convert to strings
+          return parsed.flat().map(item => String(item));
+        }
+        return [];
       } catch {
         // Fall back to space-separated
       }

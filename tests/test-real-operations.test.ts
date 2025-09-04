@@ -45,8 +45,9 @@ describe("Real Operations Integration Tests", () => {
       const info = await ankiConnect<Array<{ fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].fields.Front.value).toBe("What is Model Context Protocol?");
-      expect(info[0].tags).toContain("updated");
+      expect(info).toHaveLength(1);
+      expect(info[0]!.fields.Front!.value).toBe("What is Model Context Protocol?");
+      expect(info[0]!.tags).toContain("updated");
 
       // Delete note
       const deleteResult = await ankiConnect("deleteNotes", {
@@ -155,17 +156,17 @@ describe("Real Operations Integration Tests", () => {
         query: "tag:test",
         offset: 0,
         limit: 5,
-      });
-      expect(firstPage.cards.length).toBeLessThanOrEqual(5);
-      expect(firstPage.hasMore).toBeDefined();
+      }) as { cards: number[]; hasMore: boolean };
+      expect((firstPage as any).cards.length).toBeLessThanOrEqual(5);
+      expect((firstPage as any).hasMore).toBeDefined();
 
-      if (firstPage.hasMore) {
+      if ((firstPage as any).hasMore) {
         const secondPage = await ankiConnect("findCards", {
           query: "tag:test",
           offset: 5,
           limit: 5,
-        });
-        expect(secondPage.cards).toBeDefined();
+        }) as { cards: number[] };
+        expect((secondPage as any).cards).toBeDefined();
       }
 
       // Test paginated findNotes
@@ -173,9 +174,9 @@ describe("Real Operations Integration Tests", () => {
         query: "tag:test",
         offset: 0,
         limit: 10,
-      });
-      expect(notesPage.notes).toBeDefined();
-      expect(notesPage.total).toBeGreaterThanOrEqual(totalNotes);
+      }) as { notes: number[]; total: number };
+      expect((notesPage as any).notes).toBeDefined();
+      expect((notesPage as any).total).toBeGreaterThanOrEqual(totalNotes);
 
       // Clean up
       await cleanupNotes(noteIds);

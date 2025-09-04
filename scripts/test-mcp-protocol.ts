@@ -206,9 +206,7 @@ async function testListTools(client: MCPTestClient) {
       if (!categories[category]) {
         categories[category] = [];
       }
-      if (categories[category]) {
-        categories[category].push(tool.name);
-      }
+      categories[category]!.push(tool.name);
     }
     
     console.log("\n📊 Tools by Category:");

@@ -87,8 +87,8 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toContain("initial");
-      expect(info[0].tags).toContain("test");
+      expect(info[0]?.tags).toContain("initial");
+      expect(info[0]?.tags).toContain("test");
     });
 
     test("should update tags with array format", async () => {
@@ -103,7 +103,7 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags.sort()).toEqual(["api", "updated", "via"]);
+      expect(info[0]?.tags.sort()).toEqual(["api", "updated", "via"]);
     });
 
     test("should add tags to existing note", async () => {
@@ -116,9 +116,9 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toContain("new");
-      expect(info[0].tags).toContain("additional");
-      expect(info[0].tags).toContain("updated");
+      expect(info[0]?.tags).toContain("new");
+      expect(info[0]?.tags).toContain("additional");
+      expect(info[0]?.tags).toContain("updated");
     });
 
     test("should remove specific tags", async () => {
@@ -131,9 +131,9 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).not.toContain("new");
-      expect(info[0].tags).not.toContain("additional");
-      expect(info[0].tags).toContain("updated");
+      expect(info[0]?.tags).not.toContain("new");
+      expect(info[0]?.tags).not.toContain("additional");
+      expect(info[0]?.tags).toContain("updated");
     });
 
     test("should replace all tags", async () => {
@@ -147,8 +147,8 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toContain("replaced");
-      expect(info[0].tags).not.toContain("updated");
+      expect(info[0]?.tags).toContain("replaced");
+      expect(info[0]?.tags).not.toContain("updated");
     });
 
     test("should get all tags from collection", async () => {
@@ -290,7 +290,7 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags.sort()).toEqual(specialTags.sort());
+      expect(info[0]?.tags.sort()).toEqual(specialTags.sort());
     });
 
     test("should handle empty tag update", async () => {
@@ -305,7 +305,7 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags).toEqual([]);
+      expect(info[0]?.tags).toEqual([]);
     });
 
     test("should handle duplicate tags", async () => {
@@ -320,8 +320,8 @@ describe("Tag Handling Tests", () => {
       const info = await ankiConnect<Array<{ tags: string[] }>>("notesInfo", {
         notes: [noteId],
       });
-      expect(info[0].tags.filter((t) => t === "duplicate").length).toBe(1);
-      expect(info[0].tags).toContain("unique");
+      expect(info[0]?.tags.filter((t) => t === "duplicate").length).toBe(1);
+      expect(info[0]?.tags).toContain("unique");
     });
 
     test("should handle case sensitivity in tags", async () => {
@@ -337,7 +337,7 @@ describe("Tag Handling Tests", () => {
         notes: [noteId],
       });
       // Anki may handle case differently
-      expect(info[0].tags.length).toBeGreaterThanOrEqual(1);
+      expect(info[0]?.tags.length).toBeGreaterThanOrEqual(1);
     });
 
     afterAll(async () => {

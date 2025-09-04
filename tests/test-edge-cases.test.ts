@@ -34,7 +34,7 @@ describe("Edge Cases and Additional Coverage", () => {
         notes: [noteId],
       });
       
-      expect(info[0].fields.Back.value.length).toBe(10000);
+      expect(info[0]?.fields?.Back?.value?.length).toBe(10000);
       
       await cleanupNotes([noteId]);
     });
@@ -50,7 +50,7 @@ describe("Edge Cases and Additional Coverage", () => {
         notes: [noteId],
       });
       
-      expect(info[0].fields.Front.value).toBe(htmlContent);
+      expect(info[0]?.fields?.Front?.value).toBe(htmlContent);
       
       await cleanupNotes([noteId]);
     });
@@ -66,7 +66,7 @@ describe("Edge Cases and Additional Coverage", () => {
         notes: [noteId],
       });
       
-      expect(info[0].fields.Front.value).toBe(unicodeContent);
+      expect(info[0]?.fields?.Front?.value).toBe(unicodeContent);
       
       await cleanupNotes([noteId]);
     });
@@ -94,8 +94,8 @@ describe("Edge Cases and Additional Coverage", () => {
       });
       
       expect(Array.isArray(modTimes)).toBe(true);
-      expect(modTimes.length).toBe(cards.length);
-      modTimes.forEach((time: { cardId: number; mod: number }) => {
+      expect((modTimes as unknown[]).length).toBe(cards.length);
+      (modTimes as { cardId: number; mod: number }[]).forEach((time) => {
         expect(time).toHaveProperty("cardId");
         expect(time).toHaveProperty("mod");
         expect(typeof time.mod).toBe("number");
@@ -112,8 +112,8 @@ describe("Edge Cases and Additional Coverage", () => {
       });
       
       expect(Array.isArray(modTimes)).toBe(true);
-      expect(modTimes.length).toBe(noteIds.length);
-      modTimes.forEach((time: { noteId: number; mod: number }) => {
+      expect((modTimes as unknown[]).length).toBe(noteIds.length);
+      (modTimes as { noteId: number; mod: number }[]).forEach((time) => {
         expect(time).toHaveProperty("noteId");
         expect(time).toHaveProperty("mod");
         expect(typeof time.mod).toBe("number");
@@ -287,8 +287,8 @@ describe("Edge Cases and Additional Coverage", () => {
       
       expect(Array.isArray(reviews)).toBe(true);
       
-      if (reviews.length > 0) {
-        const review = reviews[0];
+      if ((reviews as unknown[]).length > 0) {
+        const review = (reviews as unknown[])[0];
         // Review properties may vary
         expect(review).toBeDefined();
         expect(typeof review).toBe("object");
@@ -308,7 +308,7 @@ describe("Edge Cases and Additional Coverage", () => {
       expect(typeof reviews).toBe("object");
       cards.forEach((cardId) => {
         expect(reviews).toHaveProperty(cardId.toString());
-        expect(Array.isArray(reviews[cardId])).toBe(true);
+        expect(Array.isArray((reviews as Record<string, unknown[]>)[cardId])).toBe(true);
       });
       
       await cleanupNotes([noteId]);
@@ -329,11 +329,11 @@ describe("Edge Cases and Additional Coverage", () => {
       });
       
       expect(typeof fields).toBe("object");
-      expect(Object.keys(fields).length).toBeGreaterThan(0);
+      expect(Object.keys(fields as Record<string, unknown>).length).toBeGreaterThan(0);
       
       // Basic model should have Card 1 template
-      if (fields["Card 1"]) {
-        expect(Array.isArray(fields["Card 1"])).toBe(true);
+      if ((fields as Record<string, unknown>)["Card 1"]) {
+        expect(Array.isArray((fields as Record<string, unknown[]>)["Card 1"])).toBe(true);
       }
     });
 
@@ -357,8 +357,8 @@ describe("Edge Cases and Additional Coverage", () => {
         notes: [noteId],
       });
       
-      expect(info[0].fields.Front.value).toBe("Updated front");
-      expect(info[0].fields.Back.value).toBe("Original back"); // Unchanged
+      expect(info[0]?.fields?.Front?.value).toBe("Updated front");
+      expect(info[0]?.fields?.Back?.value).toBe("Original back"); // Unchanged
       
       await cleanupNotes([noteId]);
     });
@@ -374,8 +374,8 @@ describe("Edge Cases and Additional Coverage", () => {
       // getDeckStats may return an empty object if deck has no cards
       expect(stats).toBeDefined();
       
-      if (stats.Default) {
-        const defaultStats = stats.Default;
+      if ((stats as Record<string, unknown>).Default) {
+        const defaultStats = (stats as any).Default;
         expect(defaultStats).toHaveProperty("new_count");
         expect(defaultStats).toHaveProperty("learn_count");
         expect(defaultStats).toHaveProperty("review_count");

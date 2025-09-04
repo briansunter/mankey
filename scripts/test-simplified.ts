@@ -68,13 +68,13 @@ async function testSimplified() {
     console.log("\n📊 Quick Validation:");
     
     // 1. List decks
-    const decks = await client.callTool("deckNames", {}) as { content: Array<{ text: string }> };
-    console.log("✅ List decks:", JSON.parse(decks.content[0].text).length > 0);
+    const decks = await client.callTool("deckNames", {}) as { content: Array<{ text: string }> } | null;
+    console.log("✅ List decks:", decks && decks.content && decks.content[0] && JSON.parse(decks.content[0].text).length > 0);
     
     // 2. Create and delete a test deck
     const testDeck = `SimplifiedTest_${Date.now()}`;
-    const createResult = await client.callTool("createDeck", { deck: testDeck }) as { content: Array<{ text: string }> };
-    console.log("✅ Create deck:", JSON.parse(createResult.content[0].text) > 0);
+    const createResult = await client.callTool("createDeck", { deck: testDeck }) as { content: Array<{ text: string }> } | null;
+    console.log("✅ Create deck:", createResult && createResult.content && createResult.content[0] && JSON.parse(createResult.content[0].text) > 0);
     
     // 3. Add a note
     const noteResult = await client.callTool("addNote", {
@@ -82,18 +82,20 @@ async function testSimplified() {
       modelName: "Basic",
       fields: { Front: "Test Q", Back: "Test A" },
       tags: ["test"]
-    }) as { content: Array<{ text: string }> };
-    const noteId = JSON.parse(noteResult.content[0].text);
-    console.log("✅ Add note:", noteId > 0);
+    }) as { content: Array<{ text: string }> } | null;
+    const noteId = noteResult && noteResult.content && noteResult.content[0] ? JSON.parse(noteResult.content[0].text) : null;
+    console.log("✅ Add note:", noteId && noteId > 0);
     
     // 4. Find the note
     const findResult = await client.callTool("findNotes", { 
       query: `deck:${testDeck}` 
-    }) as { content: Array<{ text: string }> };
-    console.log("✅ Find notes:", JSON.parse(findResult.content[0].text).length === 1);
+    }) as { content: Array<{ text: string }> } | null;
+    console.log("✅ Find notes:", findResult && findResult.content && findResult.content[0] && JSON.parse(findResult.content[0].text).length === 1);
     
     // 5. Delete the note
-    await client.callTool("deleteNotes", { notes: [noteId] });
+    if (noteId) {
+      await client.callTool("deleteNotes", { notes: [noteId] });
+    }
     console.log("✅ Delete note: completed");
     
     // 6. Delete the deck

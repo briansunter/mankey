@@ -76,7 +76,7 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get deck names and IDs", async () => {
-      const decksAndIds = await ankiConnect("deckNamesAndIds");
+      const decksAndIds = await ankiConnect<{ [key: string]: number }>("deckNamesAndIds");
       expect(typeof decksAndIds).toBe("object");
       expect(decksAndIds).toHaveProperty("Default");
       expect(typeof decksAndIds["Default"]).toBe("number");
@@ -106,13 +106,13 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get notes info", async () => {
-      const info = await ankiConnect("notesInfo", {
+      const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
       expect(Array.isArray(info)).toBe(true);
       expect(info[0]).toHaveProperty("noteId");
       expect(info[0]).toHaveProperty("fields");
-      expect(info[0].fields.Front.value).toBe("Test Question");
+      expect(info[0]?.fields?.Front?.value).toBe("Test Question");
     });
 
     test("should update note fields", async () => {
@@ -130,7 +130,7 @@ describe("Anki-Connect Integration Tests", () => {
       const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
-      expect(info[0].fields.Front.value).toBe("Updated Question");
+      expect(info[0]?.fields?.Front?.value).toBe("Updated Question");
     });
 
     test("should add tags to note", async () => {
@@ -143,8 +143,8 @@ describe("Anki-Connect Integration Tests", () => {
       const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
-      expect(info[0].tags).toContain("newtag");
-      expect(info[0].tags).toContain("anothertag");
+      expect(info[0]?.tags).toContain("newtag");
+      expect(info[0]?.tags).toContain("anothertag");
     });
 
     test("should remove tags from note", async () => {
@@ -157,8 +157,8 @@ describe("Anki-Connect Integration Tests", () => {
       const info = await ankiConnect<Array<{ noteId: number; fields: Record<string, { value: string }>; tags: string[] }>>("notesInfo", {
         notes: testNoteIds,
       });
-      expect(info[0].tags).not.toContain("newtag");
-      expect(info[0].tags).toContain("anothertag");
+      expect(info[0]?.tags).not.toContain("newtag");
+      expect(info[0]?.tags).toContain("anothertag");
     });
 
     test("should delete notes", async () => {
@@ -200,7 +200,7 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get card info", async () => {
-      const info = await ankiConnect("cardsInfo", {
+      const info = await ankiConnect<Array<{ cardId: number; note: number; deckName: string }>>("cardsInfo", {
         cards: testCardIds,
       });
       expect(Array.isArray(info)).toBe(true);
@@ -357,7 +357,7 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get model templates", async () => {
-      const templates = await ankiConnect("modelTemplates", {
+      const templates = await ankiConnect<Record<string, unknown>>("modelTemplates", {
         modelName: "Basic",
       });
       expect(typeof templates).toBe("object");
@@ -407,7 +407,7 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should support pagination for findCards", async () => {
-      const firstPage = await ankiConnect("findCards", {
+      const firstPage = await ankiConnect<{ cards: number[]; hasMore: boolean; total: number; offset: number; limit: number; nextOffset: number }>("findCards", {
         query: "tag:pagination-test",
         offset: 0,
         limit: 5,
@@ -415,7 +415,7 @@ describe("Anki-Connect Integration Tests", () => {
       expect(firstPage.cards.length).toBe(5);
       expect(firstPage.hasMore).toBe(true);
 
-      const secondPage = await ankiConnect("findCards", {
+      const secondPage = await ankiConnect<{ cards: number[]; hasMore: boolean; total: number; offset: number; limit: number; nextOffset: number }>("findCards", {
         query: "tag:pagination-test",
         offset: 5,
         limit: 5,
@@ -425,7 +425,7 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should support pagination for findNotes", async () => {
-      const firstPage = await ankiConnect("findNotes", {
+      const firstPage = await ankiConnect<{ notes: number[]; hasMore: boolean; total: number; offset: number; limit: number; nextOffset: number }>("findNotes", {
         query: "tag:pagination-test",
         offset: 0,
         limit: 3,

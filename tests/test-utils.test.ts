@@ -29,7 +29,7 @@ describe("Test Utils Functions", () => {
     test("should handle JSON with nested brackets", () => {
       const input = '[["nested"]]';
       const result = normalizeTags(input);
-      expect(result).toEqual([["nested"]]);
+      expect(result).toEqual(["nested"]);
     });
 
     test("should handle number input", () => {

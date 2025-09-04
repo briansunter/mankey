@@ -24,7 +24,11 @@ describe("Return Value Consistency Tests", () => {
     const noteInfo = await ankiConnect<Array<{ cards: number[] }>>("notesInfo", {
       notes: [testNoteId],
     });
-    testCardIds = noteInfo[0].cards;
+    if (noteInfo && noteInfo.length > 0 && noteInfo[0]) {
+      testCardIds = noteInfo[0].cards;
+    } else {
+      throw new Error("Failed to get note info for test card");
+    }
   });
 
   describe("Note Operations", () => {
@@ -212,9 +216,9 @@ describe("Return Value Consistency Tests", () => {
     });
 
     test("modelNamesAndIds should return object", async () => {
-      const namesAndIds = await ankiConnect("modelNamesAndIds");
+      const namesAndIds = await ankiConnect<Record<string, unknown>>("modelNamesAndIds");
       expect(typeof namesAndIds).toBe("object");
-      expect(Object.keys(namesAndIds).length).toBeGreaterThan(0);
+      expect(Object.keys(namesAndIds as Record<string, unknown>).length).toBeGreaterThan(0);
     });
 
     test("modelFieldNames should return field names", async () => {
@@ -269,7 +273,7 @@ describe("Return Value Consistency Tests", () => {
     });
 
     test("saveDeckConfig should handle config object", async () => {
-      const config = await ankiConnect("getDeckConfig", {
+      const config = await ankiConnect<Record<string, unknown> & { name?: string }>("getDeckConfig", {
         deck: "Default",
       });
       

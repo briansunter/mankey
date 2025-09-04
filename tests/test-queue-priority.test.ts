@@ -67,7 +67,7 @@ describe("Queue Priority Tests", () => {
 
   describe.skip("getNextCards Queue Priority", () => {
     test("should return cards respecting queue priority", async () => {
-      const nextCards = await ankiConnect("getNextCards", {
+      const nextCards = await ankiConnect<Array<{ cardId: number; noteId: number; deckName: string; queue: number; type: number }>>("getNextCards", {
         limit: 10,
         offset: 0,
       });
@@ -88,34 +88,36 @@ describe("Queue Priority Tests", () => {
     });
 
     test("should prioritize learning cards over review cards", async () => {
-      const nextCards = await ankiConnect("getNextCards", {
+      const nextCards = await ankiConnect<Array<{ queue: number }>>("getNextCards", {
         limit: 3,
         offset: 0,
       });
 
       if (nextCards && nextCards.length > 0) {
         // Learning cards (queue=1 or queue=3) should come first
-        const queues = nextCards.map((c: { queue: number }) => c.queue);
-        const hasLearningCard = queues.some((q: number) => q === 1 || q === 3);
+        const queues = nextCards.map((c) => c.queue);
+        const hasLearningCard = queues.some((q) => q === 1 || q === 3);
         
         if (hasLearningCard) {
-          const firstNonNewIndex = nextCards.findIndex((c: { queue: number }) => c.queue !== 0);
+          const firstNonNewIndex = nextCards.findIndex((c) => c.queue !== 0);
           if (firstNonNewIndex >= 0) {
             const firstNonNew = nextCards[firstNonNewIndex];
-            expect([1, 3]).toContain(firstNonNew.queue);
+            if (firstNonNew) {
+              expect([1, 3]).toContain(firstNonNew.queue);
+            }
           }
         }
       }
     });
 
     test("should include queue type information", async () => {
-      const nextCards = await ankiConnect("getNextCards", {
+      const nextCards = await ankiConnect<Array<{ queue: number }>>("getNextCards", {
         limit: 5,
         offset: 0,
       });
 
       if (nextCards && nextCards.length > 0) {
-        nextCards.forEach((card: { queue: number }) => {
+        nextCards.forEach((card) => {
           expect(card.queue).toBeDefined();
           expect([0, 1, 2, 3, 4]).toContain(card.queue);
           // Queue types: 0=new, 1=learning, 2=review, 3=day learning, 4=preview
@@ -124,21 +126,21 @@ describe("Queue Priority Tests", () => {
     });
 
     test("should handle pagination with queue priority maintained", async () => {
-      const page1 = await ankiConnect("getNextCards", {
+      const page1 = await ankiConnect<Array<{ cardId: number }>>("getNextCards", {
         limit: 2,
         offset: 0,
       });
       
-      const page2 = await ankiConnect("getNextCards", {
+      const page2 = await ankiConnect<Array<{ cardId: number }>>("getNextCards", {
         limit: 2,
         offset: 2,
       });
 
       if (page1 && page2 && page1.length > 0 && page2.length > 0) {
         // Verify no overlap
-        const page1Ids = new Set(page1.map((c: { cardId: number }) => c.cardId));
-        const page2Ids = new Set(page2.map((c: { cardId: number }) => c.cardId));
-        const intersection = [...page1Ids].filter((id) => page2Ids.has(id));
+        const page1Ids = new Set(page1.map((c) => c.cardId));
+        const page2Ids = new Set(page2.map((c) => c.cardId));
+        const intersection = Array.from(page1Ids).filter((id) => page2Ids.has(id));
         expect(intersection).toHaveLength(0);
       }
     });
@@ -146,7 +148,7 @@ describe("Queue Priority Tests", () => {
 
   describe.skip("getDueCardsDetailed with Priority", () => {
     test("should return detailed due cards with priority", async () => {
-      const dueCards = await ankiConnect("getDueCardsDetailed", {
+      const dueCards = await ankiConnect<{ cards: Array<{ cardId: number; noteId: number; queue: number; fields: Record<string, string>; deckName: string }>; total: number; hasMore: boolean }>("getDueCardsDetailed", {
         limit: 10,
         offset: 0,
       });
@@ -166,13 +168,13 @@ describe("Queue Priority Tests", () => {
     });
 
     test("should include field values in detailed response", async () => {
-      const dueCards = await ankiConnect("getDueCardsDetailed", {
+      const dueCards = await ankiConnect<{ cards: Array<{ fields: Record<string, string>; modelName?: string }> }>("getDueCardsDetailed", {
         limit: 5,
         offset: 0,
       });
 
       if (dueCards && dueCards.cards && dueCards.cards.length > 0) {
-        dueCards.cards.forEach((card: { fields: Record<string, string>; modelName?: string }) => {
+        dueCards.cards.forEach((card) => {
           expect(card.fields).toBeDefined();
           expect(typeof card.fields).toBe("object");
           // Should have Front and Back fields for Basic model
@@ -202,7 +204,7 @@ describe("Queue Priority Tests", () => {
       let cardInfo = await ankiConnect<Array<{ queue: number }>>("cardsInfo", {
         cards: [cardId],
       });
-      expect(cardInfo[0].queue).toBe(0);
+      expect(cardInfo[0]?.queue).toBe(0);
 
       // Answer to move to learning
       if (cardId) {
@@ -212,7 +214,7 @@ describe("Queue Priority Tests", () => {
       cardInfo = await ankiConnect<Array<{ queue: number }>>("cardsInfo", {
         cards: [cardId],
       });
-      expect([1, 3]).toContain(cardInfo[0].queue); // Learning or day learning
+      expect([1, 3]).toContain(cardInfo[0]?.queue); // Learning or day learning
 
       await cleanupNotes([testNote]);
     });
@@ -232,14 +234,14 @@ describe("Queue Priority Tests", () => {
       await ankiConnect("suspend", { cards });
       
       // Suspended cards should not appear in next cards
-      const nextCards = await ankiConnect("getNextCards", {
+      const nextCards = await ankiConnect<Array<{ cardId: number }>>("getNextCards", {
         limit: 100,
         offset: 0,
       });
       
       if (nextCards && nextCards.length > 0) {
         const suspendedFound = nextCards.some(
-          (c: { cardId: number }) => cards.includes(c.cardId)
+          (c) => cards.includes(c.cardId)
         );
         expect(suspendedFound).toBe(false);
       }
@@ -278,7 +280,7 @@ describe("Queue Priority Tests", () => {
     test("should efficiently handle large queue requests", async () => {
       const start = performance.now();
       
-      const result = await ankiConnect("getNextCards", {
+      const result = await ankiConnect<unknown[]>("getNextCards", {
         limit: 50,
         offset: 0,
       });
@@ -292,15 +294,16 @@ describe("Queue Priority Tests", () => {
     });
 
     test("should provide accurate queue statistics", async () => {
-      const stats = await ankiConnect("getDeckStats", {
+      const stats = await ankiConnect<Record<string, { new_count: number; learn_count: number; review_count: number }>>("getDeckStats", {
         decks: [testDeck],
       });
       
       expect(stats[testDeck]).toBeDefined();
-      if (stats[testDeck]) {
-        expect(stats[testDeck]).toHaveProperty("new_count");
-        expect(stats[testDeck]).toHaveProperty("learn_count");
-        expect(stats[testDeck]).toHaveProperty("review_count");
+      const deckStats = stats[testDeck];
+      if (deckStats) {
+        expect(deckStats).toHaveProperty("new_count");
+        expect(deckStats).toHaveProperty("learn_count");
+        expect(deckStats).toHaveProperty("review_count");
       }
     });
   });

@@ -74,7 +74,10 @@ async function testStringIds() {
     console.log("\n1️⃣ Finding cards...");
     const findResult = await client.callTool("findCards", { 
       query: "deck:Default" 
-    }) as { content: Array<{ text: string }> };
+    }) as { content: Array<{ text: string }> } | null;
+    if (!findResult?.content?.[0]?.text) {
+      throw new Error('Failed to find cards');
+    }
     const cardIds = JSON.parse(findResult.content[0].text);
     console.log(`✅ Found ${cardIds.length} cards`);
     
@@ -86,7 +89,10 @@ async function testStringIds() {
       try {
         const cardsInfoResult = await client.callTool("cardsInfo", { 
           cards: stringIds 
-        }) as { content: Array<{ text: string }> };
+        }) as { content: Array<{ text: string }> } | null;
+        if (!cardsInfoResult?.content?.[0]?.text) {
+          throw new Error('Failed to get cards info');
+        }
         const info = JSON.parse(cardsInfoResult.content[0].text);
         console.log(`✅ cardsInfo handled string IDs correctly (got ${info.length} cards)`);
       } catch (error: unknown) {
@@ -100,7 +106,10 @@ async function testStringIds() {
       try {
         const mixedResult = await client.callTool("cardsInfo", { 
           cards: mixedIds 
-        }) as { content: Array<{ text: string }> };
+        }) as { content: Array<{ text: string }> } | null;
+        if (!mixedResult?.content?.[0]?.text) {
+          throw new Error('Failed to get mixed cards info');
+        }
         const mixedInfo = JSON.parse(mixedResult.content[0].text);
         console.log(`✅ cardsInfo handled mixed IDs correctly (got ${mixedInfo.length} cards)`);
       } catch (error: unknown) {
@@ -112,7 +121,10 @@ async function testStringIds() {
     console.log("\n4️⃣ Finding notes...");
     const notesResult = await client.callTool("findNotes", { 
       query: "deck:Default" 
-    }) as { content: Array<{ text: string }> };
+    }) as { content: Array<{ text: string }> } | null;
+    if (!notesResult?.content?.[0]?.text) {
+      throw new Error('Failed to find notes');
+    }
     const noteIds = JSON.parse(notesResult.content[0].text);
     
     if (noteIds.length > 0) {
@@ -122,7 +134,10 @@ async function testStringIds() {
       try {
         const notesInfoResult = await client.callTool("notesInfo", { 
           notes: stringNoteIds 
-        }) as { content: Array<{ text: string }> };
+        }) as { content: Array<{ text: string }> } | null;
+        if (!notesInfoResult?.content?.[0]?.text) {
+          throw new Error('Failed to get notes info');
+        }
         const info = JSON.parse(notesInfoResult.content[0].text);
         console.log(`✅ notesInfo handled string IDs correctly (got ${info.length} notes)`);
       } catch (error: unknown) {
