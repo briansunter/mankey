@@ -17,6 +17,7 @@ module.exports = {
         'ci',       // CI/CD changes
         'build'     // build system changes
       ]
-    ]
+    ],
+    'body-max-line-length': [0, 'always'] // Disable body line length limit
   }
 };
