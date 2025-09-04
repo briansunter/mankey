@@ -11,19 +11,18 @@ A Model Context Protocol (MCP) server for Anki, providing 45 tools for managing 
 
 ### Installation
 ```bash
-git clone <repository-url>
-cd anky
-bun install
+npx mankey
 ```
 
-### Configuration
-Add to your MCP client config (e.g., Claude Desktop):
+This will automatically add the MCP server to your Claude Desktop configuration.
+
+#### Manual Configuration (if needed)
 ```json
 {
   "mcpServers": {
     "anki": {
-      "command": "bun",
-      "args": ["run", "/path/to/anky/src/index.ts"]
+      "command": "npx",
+      "args": ["mankey"]
     }
   }
 }
