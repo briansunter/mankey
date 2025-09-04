@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/briansunter/mankey/compare/v1.0.2...v1.0.3) (2025-09-04)
+
+
+### Bug Fixes
+
+* update readme ([6cc13a5](https://github.com/briansunter/mankey/commit/6cc13a56d6fd19d97223d855e5eabe110832ca97))
+
 ## [1.0.2](https://github.com/briansunter/mankey/compare/v1.0.1...v1.0.2) (2025-09-04)
 
 
