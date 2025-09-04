@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server for Anki, providing 45 tools for managing your Anki collection via Anki-Connect.
 
+![Mankey](./screenshots/mankey.png)
+
 ## Quick Start
 
 ### Prerequisites
