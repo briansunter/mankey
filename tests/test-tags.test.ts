@@ -98,7 +98,7 @@ describe("Tag Handling Tests", () => {
           tags: ["updated", "via", "api"],
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -111,7 +111,7 @@ describe("Tag Handling Tests", () => {
         notes: [noteId],
         tags: "new additional",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -126,7 +126,7 @@ describe("Tag Handling Tests", () => {
         notes: [noteId],
         tags: "new additional",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -142,7 +142,7 @@ describe("Tag Handling Tests", () => {
         tag_to_replace: "updated",
         replace_with_tag: "replaced",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -169,7 +169,7 @@ describe("Tag Handling Tests", () => {
       });
 
       const result = await ankiConnect("clearUnusedTags");
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const tags = await ankiConnect<string[]>("getTags");
       expect(tags).not.toContain("temporary_unique_tag_12345");
@@ -201,7 +201,7 @@ describe("Tag Handling Tests", () => {
         notes: noteIds,
         tags: "common shared",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: noteIds,
@@ -217,7 +217,7 @@ describe("Tag Handling Tests", () => {
         notes: noteIds,
         tags: "common",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: noteIds,
@@ -233,7 +233,7 @@ describe("Tag Handling Tests", () => {
         tag_to_replace: "bulk",
         replace_with_tag: "batch",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: noteIds,
@@ -285,7 +285,7 @@ describe("Tag Handling Tests", () => {
           tags: specialTags,
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -300,7 +300,7 @@ describe("Tag Handling Tests", () => {
           tags: [],
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -315,7 +315,7 @@ describe("Tag Handling Tests", () => {
           tags: ["duplicate", "duplicate", "unique"],
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],
@@ -331,7 +331,7 @@ describe("Tag Handling Tests", () => {
           tags: ["Test", "test", "TEST"],
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
 
       const info = await ankiConnect<any[]>("notesInfo", {
         notes: [noteId],

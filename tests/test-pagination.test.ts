@@ -248,7 +248,7 @@ describe("Pagination Tests", () => {
         hasMore = page.hasMore;
         offset += pageSize;
         
-        if (offset > 100) break; // Safety limit
+        if (offset > 100) {break;} // Safety limit
       }
       
       // Check for duplicates

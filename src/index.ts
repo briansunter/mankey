@@ -13,85 +13,85 @@ import { z } from "zod";
 // Configuration
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const ANKI_CONNECT_VERSION = 6;
-const DEBUG = process.env.DEBUG === 'true';
+const DEBUG = process.env.DEBUG === "true";
 
 // Debug logging helper (writes to stderr which shows in stdio)
 function debug(message: string, data?: any) {
   if (DEBUG) {
-    console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data) : '');
+    console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data) : "");
   }
 }
 
 // Utility function to normalize tags from various formats
 function normalizeTags(tags: any): string[] {
-  debug('normalizeTags input:', tags);
+  debug("normalizeTags input:", tags);
   
   // Already an array - return as is
   if (Array.isArray(tags)) {
-    debug('Tags already array');
+    debug("Tags already array");
     return tags;
   }
   
   // String that might be JSON or space-separated
-  if (typeof tags === 'string') {
+  if (typeof tags === "string") {
     // Try parsing as JSON array
-    if (tags.startsWith('[')) {
+    if (tags.startsWith("[")) {
       try {
         const parsed = JSON.parse(tags);
         if (Array.isArray(parsed)) {
-          debug('Parsed tags from JSON:', parsed);
+          debug("Parsed tags from JSON:", parsed);
           return parsed;
         }
       } catch {
-        debug('Failed to parse JSON tags, using space-split');
+        debug("Failed to parse JSON tags, using space-split");
       }
     }
     
     // Fall back to space-separated
-    const split = tags.split(' ').filter(t => t.trim());
-    debug('Split tags by space:', split);
+    const split = tags.split(" ").filter(t => t.trim());
+    debug("Split tags by space:", split);
     return split;
   }
   
-  debug('Unknown tag format, returning empty array');
+  debug("Unknown tag format, returning empty array");
   return [];
 }
 
 // Utility to normalize fields from various formats
 function normalizeFields(fields: any): object | undefined {
-  debug('normalizeFields input:', fields);
+  debug("normalizeFields input:", fields);
   
-  if (!fields) return undefined;
+  if (!fields) {return undefined;}
   
   // Already an object
-  if (typeof fields === 'object' && !Array.isArray(fields)) {
-    debug('Fields already object');
+  if (typeof fields === "object" && !Array.isArray(fields)) {
+    debug("Fields already object");
     return fields;
   }
   
   // String that might be JSON
-  if (typeof fields === 'string') {
+  if (typeof fields === "string") {
     try {
       const parsed = JSON.parse(fields);
-      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-        debug('Parsed fields from JSON:', parsed);
+      if (typeof parsed === "object" && !Array.isArray(parsed)) {
+        debug("Parsed fields from JSON:", parsed);
         return parsed;
       }
     } catch {
-      debug('Failed to parse JSON fields');
+      debug("Failed to parse JSON fields");
     }
   }
   
-  debug('Unknown fields format, returning undefined');
+  debug("Unknown fields format, returning undefined");
   return undefined;
 }
 
 // Helper for base64 encoding (for media operations)
-function encodeBase64(data: string | Buffer): string {
-  if (typeof data === 'string') {
-    return Buffer.from(data).toString('base64');
+function _encodeBase64(data: string | Buffer): string {
+  if (typeof data === "string") {
+    return Buffer.from(data).toString("base64");
   }
-  return data.toString('base64');
+  return data.toString("base64");
 }
 
 // Anki-Connect API helper with improved error handling
@@ -106,7 +106,7 @@ async function ankiConnect(action: string, params = {}): Promise<any> {
     const data = await response.json() as { error?: string; result?: any };
     if (data.error) {
       // Clean up nested error messages
-      const cleanError = data.error.replace(/^Anki-Connect: /, '');
+      const cleanError = data.error.replace(/^Anki-Connect: /, "");
       throw new Error(`${action} failed: ${cleanError}`);
     }
     return data.result;
@@ -270,15 +270,15 @@ const tools: Record<string, ToolDef> = {
       ])),
     }),
     handler: async ({ notes }) => {
-      debug('addNotes called with:', notes);
+      debug("addNotes called with:", notes);
       
       // Parse and normalize notes
       const parsedNotes = notes.map((note: any) => {
-        if (typeof note === 'string') {
+        if (typeof note === "string") {
           try {
             note = JSON.parse(note);
-          } catch (e) {
-            throw new Error('Invalid note format');
+          } catch (_e) {
+            throw new Error("Invalid note format");
           }
         }
         
@@ -304,7 +304,7 @@ const tools: Record<string, ToolDef> = {
       allowDuplicate: z.boolean().optional().describe("Allow duplicates"),
     }),
     handler: async (args) => {
-      debug('addNote called with:', args);
+      debug("addNote called with:", args);
       const tags = args.tags ? normalizeTags(args.tags) : [];
       
       return ankiConnect("addNote", {
@@ -343,7 +343,7 @@ const tools: Record<string, ToolDef> = {
             nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
           }
         };
-      } catch (error) {
+      } catch (_error) {
         // Return empty result set on error
         return {
           notes: [],
@@ -367,7 +367,7 @@ const tools: Record<string, ToolDef> = {
       tags: z.union([z.array(z.string()), z.string()]).optional().describe("New tags"),
     }),
     handler: async ({ id, fields, tags }) => {
-      debug('updateNote called with:', { id, fields, tags });
+      debug("updateNote called with:", { id, fields, tags });
       
       const noteData: any = { 
         id: typeof id === "string" ? parseInt(id, 10) : id
@@ -384,7 +384,7 @@ const tools: Record<string, ToolDef> = {
         noteData.tags = normalizeTags(tags);
       }
       
-      debug('Sending to Anki-Connect:', noteData);
+      debug("Sending to Anki-Connect:", noteData);
       
       const result = await ankiConnect("updateNote", {
         note: noteData
@@ -514,7 +514,7 @@ const tools: Record<string, ToolDef> = {
             nextOffset: offset + effectiveLimit < total ? offset + effectiveLimit : null,
           }
         };
-      } catch (error) {
+      } catch (_error) {
         // Return empty result set on error
         return {
           cards: [],

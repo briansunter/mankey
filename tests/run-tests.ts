@@ -37,7 +37,7 @@ async function checkAnkiConnection(): Promise<boolean> {
         version: 6,
       }),
     });
-    const result = await response.json();
+    const result: any = await response.json();
     return !result.error && result.result >= 6;
   } catch {
     return false;
@@ -133,7 +133,7 @@ async function main() {
     const icon = passed ? "✅" : "❌";
     const status = passed ? "PASSED" : "FAILED";
     console.log(`${icon} ${test.padEnd(30)} ${status}`);
-    if (!passed) allPassed = false;
+    if (!passed) {allPassed = false;}
   }
 
   const passedCount = results.filter((r) => r.passed).length;

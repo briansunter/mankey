@@ -1,4 +1,3 @@
-import { expect } from "bun:test";
 
 const ANKI_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const ANKI_API_KEY = process.env.ANKI_API_KEY;
@@ -58,34 +57,10 @@ export async function createTestNote(
  * Clean up test notes by IDs
  */
 export async function cleanupNotes(noteIds: number[]): Promise<void> {
-  if (noteIds.length === 0) return;
+  if (noteIds.length === 0) {return;}
   await ankiConnect("deleteNotes", { notes: noteIds });
 }
 
-/**
- * Create test deck and return its ID
- * WARNING: This causes full sync requirement - avoid in tests
- * @deprecated Use existing Default deck instead
- */
-export async function createTestDeck(name: string): Promise<number> {
-  // Avoid creating new decks - use Default instead
-  console.warn("WARNING: Creating decks requires full sync. Use Default deck instead.");
-  return ankiConnect("createDeck", { deck: name });
-}
-
-/**
- * Clean up test deck
- * WARNING: This causes full sync requirement - avoid in tests
- * @deprecated Clean up notes instead of deleting decks
- */
-export async function cleanupDeck(name: string): Promise<void> {
-  // Avoid deleting decks - just clean up notes instead
-  console.warn("WARNING: Deleting decks requires full sync. Clean up notes instead.");
-  await ankiConnect("deleteDecks", {
-    decks: [name],
-    cardsToo: true,
-  });
-}
 
 /**
  * Verify Anki is running and connected
@@ -166,34 +141,28 @@ export async function answerCard(
  * Get next card for review
  */
 export async function getNextCard(): Promise<any> {
-  const cards = await ankiConnect("getNextCards", {
-    limit: 1,
-    offset: 0,
-  });
-  return cards?.[0];
-}
-
-/**
- * Create a Basic model if it doesn't exist
- * WARNING: This causes full sync requirement - avoid in tests
- * @deprecated Assume Basic model exists
- */
-export async function ensureBasicModel(): Promise<void> {
-  const models = await ankiConnect<string[]>("modelNames");
-  if (!models.includes("Basic")) {
-    console.warn("WARNING: Creating models requires full sync. Assuming Basic model exists.");
-    // Don't create models in tests - assume they exist
-    // await ankiConnect("createModel", { ... });
+  try {
+    const cards = await ankiConnect<number[]>("findCards", {
+      query: "is:due",
+    });
+    if (cards && cards.length > 0) {
+      const info = await ankiConnect<any[]>("cardsInfo", {
+        cards: [cards[0]],
+      });
+      return info?.[0];
+    }
+    return undefined;
+  } catch {
+    return undefined;
   }
 }
+
 
 /**
  * Setup test environment
  */
 export async function setupTestEnvironment(): Promise<void> {
   await verifyAnkiConnection();
-  // Don't create models or decks - use existing ones
-  // await ensureBasicModel();
   
   // Verify Default deck exists (it should always exist)
   const decks = await ankiConnect<string[]>("deckNames");

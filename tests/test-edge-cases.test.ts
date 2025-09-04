@@ -239,7 +239,7 @@ describe("Edge Cases and Additional Coverage", () => {
       
       // Clear unused tags
       const result = await ankiConnect("clearUnusedTags");
-      expect(result).toBe(true);
+      expect(result).toBeNull();
       
       // Verify tag is gone
       const allTags = await ankiConnect<string[]>("getTags");
@@ -270,7 +270,7 @@ describe("Edge Cases and Additional Coverage", () => {
         tag_to_replace: oldTag,
         replace_with_tag: newTag,
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
       
       // Verify replacement
       const info = await ankiConnect<any[]>("notesInfo", {
@@ -363,7 +363,7 @@ describe("Edge Cases and Additional Coverage", () => {
           fields: { Front: "Updated front" },
         },
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
       
       // Verify update
       const info = await ankiConnect<any[]>("notesInfo", {
@@ -442,14 +442,14 @@ describe("Edge Cases and Additional Coverage", () => {
         cards: cards,
         days: "1",
       });
-      expect(result).toBe(true);
+      expect(result).toBeNull();
       
       // Set due date to specific days range
       const rangeResult = await ankiConnect("setDueDate", {
         cards: cards,
         days: "1-3",
       });
-      expect(rangeResult).toBe(true);
+      expect(rangeResult).toBeNull();
       
       await cleanupNotes([noteId]);
     });

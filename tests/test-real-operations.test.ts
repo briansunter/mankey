@@ -5,13 +5,10 @@ import {
   cleanupNotes,
   setupTestEnvironment,
   createTestNotes,
-  getCardsByDeck,
   suspendCards,
   unsuspendCards,
   getDeckStats,
-  getAllCards,
   answerCard,
-  getNextCard,
 } from "./test-utils";
 
 describe("Real Operations Integration Tests", () => {
@@ -321,12 +318,14 @@ describe("Real Operations Integration Tests", () => {
       const learningCards = await ankiConnect<number[]>("findCards", {
         query: `nid:${learningNoteId}`,
       });
-      const reviewCards = await ankiConnect<number[]>("findCards", {
+      const _reviewCards = await ankiConnect<number[]>("findCards", {
         query: `nid:${reviewNoteId}`,
       });
 
       // Put one card in learning state by answering it
-      await answerCard(learningCards[0], 1); // Answer "Again" to put in learning
+      if (learningCards[0]) {
+        await answerCard(learningCards[0], 1); // Answer "Again" to put in learning
+      }
 
       // Get next cards with queue priority
       const nextCards = await ankiConnect("getNextCards", {
@@ -421,7 +420,9 @@ describe("Real Operations Integration Tests", () => {
     });
 
     test("should get review information", async () => {
-      const latestReviewId = await ankiConnect<number>("getLatestReviewID");
+      const latestReviewId = await ankiConnect<number>("getLatestReviewID", {
+        deck: "Default",
+      });
       expect(typeof latestReviewId).toBe("number");
 
       // Get card reviews (requires startID)

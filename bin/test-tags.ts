@@ -2,16 +2,16 @@
 
 // Test script to verify tag handling in Anki MCP server
 
-const ANKI_URL = 'http://127.0.0.1:8765';
+const ANKI_URL = "http://127.0.0.1:8765";
 
 // Helper to call Anki-Connect directly
-async function ankiConnect(action: string, params: any = {}) {
+async function ankiConnect(action: string, params: any = {}): Promise<any> {
   const response = await fetch(ANKI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action, version: 6, params })
   });
-  const result = await response.json();
+  const result: any = await response.json();
   if (result.error) {
     throw new Error(`AnkiConnect error: ${result.error}`);
   }
@@ -63,9 +63,9 @@ function normalizeTags(tags: any): string[] {
   }
   
   // If it's a string
-  if (typeof tags === 'string') {
+  if (typeof tags === "string") {
     // Try to parse as JSON first
-    if (tags.startsWith('[') && tags.endsWith(']')) {
+    if (tags.startsWith("[") && tags.endsWith("]")) {
       try {
         const parsed = JSON.parse(tags);
         console.log("✅ Parsed JSON:", parsed);
@@ -76,7 +76,7 @@ function normalizeTags(tags: any): string[] {
     }
     
     // Fall back to space-separated
-    const split = tags.split(' ').filter(t => t.trim());
+    const split = tags.split(" ").filter(t => t.trim());
     console.log("✅ Split by space:", split);
     return split;
   }
@@ -90,7 +90,7 @@ async function runTests() {
   
   // Test the normalization function
   console.log("📝 Testing normalizeTags function:");
-  console.log("="*50);
+  console.log("=".repeat(50));
   
   for (const testCase of testCases) {
     console.log(`\n📌 Test: ${testCase.name}`);
@@ -103,7 +103,7 @@ async function runTests() {
   
   // Test with actual Anki-Connect
   console.log("\n\n🔗 Testing with Anki-Connect:");
-  console.log("="*50);
+  console.log("=".repeat(50));
   
   try {
     // Create a test note

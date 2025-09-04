@@ -4,8 +4,6 @@ import {
   verifyAnkiConnection,
   createTestNote,
   cleanupNotes,
-  createTestDeck,
-  cleanupDeck,
   setupTestEnvironment,
 } from "./test-utils";
 
@@ -378,7 +376,9 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get latest review ID", async () => {
-      const id = await ankiConnect<number>("getLatestReviewID");
+      const id = await ankiConnect<number>("getLatestReviewID", {
+        deck: "Default",
+      });
       expect(typeof id).toBe("number");
     });
   });

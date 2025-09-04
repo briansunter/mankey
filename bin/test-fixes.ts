@@ -2,15 +2,15 @@
 
 // Test script to verify all return value fixes
 
-const ANKI_URL = 'http://127.0.0.1:8765';
+const ANKI_URL = "http://127.0.0.1:8765";
 
-async function ankiConnect(action: string, params: any = {}) {
+async function ankiConnect(action: string, params: any = {}): Promise<any> {
   const response = await fetch(ANKI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action, version: 6, params })
   });
-  const result = await response.json();
+  const result: any = await response.json();
   if (result.error) {
     throw new Error(`AnkiConnect error: ${result.error}`);
   }
@@ -53,7 +53,7 @@ async function runTests() {
       }
     });
     console.log(`   Result: ${updateResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${updateResult === true ? 'true' : updateResult}\n`);
+    console.log(`   ✅ Returns: ${updateResult === true ? "true" : updateResult}\n`);
     
     // Test 2: changeDeck
     console.log("2️⃣ Testing changeDeck...");
@@ -62,7 +62,7 @@ async function runTests() {
       deck: "Default"
     });
     console.log(`   Result: ${changeDeckResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${changeDeckResult === true ? 'true' : changeDeckResult}\n`);
+    console.log(`   ✅ Returns: ${changeDeckResult === true ? "true" : changeDeckResult}\n`);
     
     // Test 3: forgetCards (reset to new)
     console.log("3️⃣ Testing forgetCards...");
@@ -70,7 +70,7 @@ async function runTests() {
       cards: [testCardIds[0]]
     });
     console.log(`   Result: ${forgetResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${forgetResult === true ? 'true' : forgetResult}\n`);
+    console.log(`   ✅ Returns: ${forgetResult === true ? "true" : forgetResult}\n`);
     
     // Test 4: relearnCards  
     console.log("4️⃣ Testing relearnCards...");
@@ -78,7 +78,7 @@ async function runTests() {
       cards: [testCardIds[0]]
     });
     console.log(`   Result: ${relearnResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${relearnResult === true ? 'true' : relearnResult}\n`);
+    console.log(`   ✅ Returns: ${relearnResult === true ? "true" : relearnResult}\n`);
     
     // Test 5: replaceTags
     console.log("5️⃣ Testing replaceTags...");
@@ -88,7 +88,7 @@ async function runTests() {
       replace_with_tag: "test-fixed"
     });
     console.log(`   Result: ${replaceTagsResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${replaceTagsResult === true ? 'true' : replaceTagsResult}\n`);
+    console.log(`   ✅ Returns: ${replaceTagsResult === true ? "true" : replaceTagsResult}\n`);
     
     // Test 6: replaceTagsInAllNotes
     console.log("6️⃣ Testing replaceTagsInAllNotes...");
@@ -97,13 +97,13 @@ async function runTests() {
       replace_with_tag: "test-final"
     });
     console.log(`   Result: ${replaceAllResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${replaceAllResult === true ? 'true' : replaceAllResult}\n`);
+    console.log(`   ✅ Returns: ${replaceAllResult === true ? "true" : replaceAllResult}\n`);
     
     // Test 7: clearUnusedTags
     console.log("7️⃣ Testing clearUnusedTags...");
     const clearTagsResult = await ankiConnect("clearUnusedTags");
     console.log(`   Result: ${clearTagsResult} (expected: true or null → true)`);
-    console.log(`   ✅ Returns: ${clearTagsResult === true ? 'true' : clearTagsResult}\n`);
+    console.log(`   ✅ Returns: ${clearTagsResult === true ? "true" : clearTagsResult}\n`);
     
     // Test 8: removeDeckConfigId (skip as it requires specific config)
     console.log("8️⃣ Testing removeDeckConfigId...");

@@ -5,7 +5,6 @@ import {
   cleanupNotes,
   setupTestEnvironment,
   answerCard,
-  getCardsByDeck,
 } from "./test-utils";
 
 describe("Queue Priority Tests", () => {
@@ -15,7 +14,7 @@ describe("Queue Priority Tests", () => {
   let newNoteId: number;
   let learningCards: number[];
   let reviewCards: number[];
-  let newCards: number[];
+  let _newCards: number[];
 
   beforeAll(async () => {
     await setupTestEnvironment();
@@ -48,16 +47,20 @@ describe("Queue Priority Tests", () => {
     reviewCards = await ankiConnect<number[]>("findCards", {
       query: `nid:${reviewNoteId}`,
     });
-    newCards = await ankiConnect<number[]>("findCards", {
+    _newCards = await ankiConnect<number[]>("findCards", {
       query: `nid:${newNoteId}`,
     });
 
     // Set up card states
     // Put learning card in learning queue (answer with Again)
-    await answerCard(learningCards[0], 1);
+    if (learningCards[0]) {
+      await answerCard(learningCards[0], 1);
+    }
     
     // Put review card in review queue (answer once with Good, then wait)
-    await answerCard(reviewCards[0], 3);
+    if (reviewCards[0]) {
+      await answerCard(reviewCards[0], 3);
+    }
     
     // New card remains untouched
   });
@@ -202,7 +205,9 @@ describe("Queue Priority Tests", () => {
       expect(cardInfo[0].queue).toBe(0);
 
       // Answer to move to learning
-      await answerCard(cardId, 1);
+      if (cardId) {
+        await answerCard(cardId, 1);
+      }
       
       cardInfo = await ankiConnect<any[]>("cardsInfo", {
         cards: [cardId],
