@@ -118,7 +118,9 @@ anky/
 │   ├── *.test.ts         # Bun Jest test suites
 │   ├── test-utils.ts     # Shared test utilities
 │   └── run-tests.ts      # Test runner
-├── bin/                   # Utility scripts
+├── scripts/               # Standalone test scripts
+│   ├── test-*.ts         # Manual test scripts
+│   └── test-*.sh         # Shell test scripts
 ├── docs/                  # Documentation
 ├── package.json          # Dependencies
 └── bunfig.toml          # Bun configuration
