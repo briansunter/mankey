@@ -1,3 +1,16 @@
+# 1.0.0 (2025-09-04)
+
+
+### Bug Fixes
+
+* commit ([45f2068](https://github.com/briansunter/mankey/commit/45f206835ca1a07f590e55086c32203148eb394c))
+* length ([b3e5fa9](https://github.com/briansunter/mankey/commit/b3e5fa947e4f80e9b3991e58b1f98c9b6e817360))
+* lint ([60fec10](https://github.com/briansunter/mankey/commit/60fec1028708f9e19e02190046e87227e8c40925))
+* tests ([0539106](https://github.com/briansunter/mankey/commit/0539106bddba1a687ae75baa793f62ea87d7e837))
+* tests pass ([0d630a8](https://github.com/briansunter/mankey/commit/0d630a8d2a1c501a678173f3b0b37cfc200e77a3))
+* tsc issues ([4e05532](https://github.com/briansunter/mankey/commit/4e055322a91ebc615b81b5898a5b2820c5e30651))
+* tsc issues ([c1ba9d1](https://github.com/briansunter/mankey/commit/c1ba9d1d26ead85d0bcb08e36f27893b50d9204e))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
