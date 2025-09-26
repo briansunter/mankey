@@ -24,7 +24,7 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "tsc",
     "dev": "bun --watch src/index.ts",
     "test": "bun test",
     "test:e2e": "bun test tests/*.test.ts",
@@ -73,6 +73,10 @@
     "anki-connect",
     "spaced-repetition"
   ],
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
   "author": "",
   "license": "MIT"
 }

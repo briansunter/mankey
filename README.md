@@ -1,6 +1,6 @@
-# Anki MCP Server
+# Mankey - Anki MCP Server
 
-A Model Context Protocol (MCP) server for Anki, providing 45 tools for managing your Anki collection via Anki-Connect.
+Supercharge your Anki workflow with MCP! A Model Context Protocol (MCP) server that connects to Anki, enabling AI-powered card creation, learning analytics, and intelligent review management through 45 comprehensive tools.
 
 ![Mankey](./screenshots/mankey.png)
 
@@ -12,13 +12,9 @@ A Model Context Protocol (MCP) server for Anki, providing 45 tools for managing 
 3. **[Bun](https://bun.sh)** - JavaScript runtime
 
 ### Installation
-```bash
-npx mankey
-```
 
 This will automatically add the MCP server to your Claude Desktop configuration.
 
-#### Manual Configuration (if needed)
 ```json
 {
   "mcpServers": {
@@ -30,9 +26,77 @@ This will automatically add the MCP server to your Claude Desktop configuration.
 }
 ```
 
+### Manual Configuration
+```bash
+npx mankey
+```
+
+## 🚀 What You Can Do
+
+### 📚 **Create Learning Content from Any Source**
+- "Create flashcards from this PDF about quantum physics"
+- "Turn this article into language learning cards with audio"
+- "Generate cloze deletions for these medical terms"
+- "Make image occlusion cards from this anatomy diagram"
+
+### 🎯 **Smart Review Management**
+- "Show me my hardest cards and explain why I'm struggling"
+- "Reschedule cards I've failed multiple times"
+- "Optimize intervals for cards I know well"
+- "Find and fix duplicate or similar cards"
+
+### 📖 **Generate Stories & Mnemonics**
+- "Create a story using my due Japanese vocabulary"
+- "Make mnemonics for these chemical formulas"
+- "Generate example sentences for difficult words"
+- "Create memory palace descriptions for historical dates"
+
+### 📊 **Learning Analytics**
+- "Analyze my review patterns and suggest improvements"
+- "Show cards I'm most likely to forget soon"
+- "Find knowledge gaps in my study topics"
+- "Track my progress on specific subjects"
+
+### 🎨 **Custom Card Templates**
+- "Create a template for medical case studies"
+- "Design cards optimized for code snippets"
+- "Make interactive cards with hints and explanations"
+- "Build progressive disclosure templates"
+
+### 🔧 **Bulk Operations**
+- "Tag all cards about specific topics"
+- "Move cards between decks based on performance"
+- "Update formatting across all cards"
+- "Clean up and standardize card content"
+
+## Example Conversations
+
+### Creating Cards from Content
+```
+You: "I'm reading about the French Revolution. Create cards for key events."
+Claude: I'll create flashcards for major French Revolution events...
+[Creates cards with dates, causes, key figures, and outcomes]
+```
+
+### Learning Optimization
+```
+You: "Find my most difficult Spanish vocabulary and create practice sentences"
+Claude: I found 15 cards with <50% success rate. Here are contextual sentences...
+[Generates sentences and updates cards with example usage]
+```
+
+### Study Analytics
+```
+You: "How am I doing with my medical terminology deck?"
+Claude: You're reviewing 45 cards/day with 78% retention. Cards about prefixes 
+need more work. I suggest focusing on these 10 challenging concepts...
+```
+
 ## Core Features
 
 ✅ **45 comprehensive tools** covering all Anki operations  
+✅ **AI-powered content generation** - Create cards from any text, PDF, or webpage  
+✅ **Intelligent review scheduling** - Optimize intervals based on performance  
 ✅ **Smart normalization** - Handles tags/IDs in any format  
 ✅ **Pagination** - Efficiently handle large collections  
 ✅ **Queue priority** - Respects Anki's learning system  
@@ -149,11 +213,40 @@ defaults write net.ankiweb.dtop NSAppSleepDisabled -bool true
 | UPDATE/DELETE/ACTION | `true` on success |
 | GET | Data or `null` |
 
+## Common Use Cases
+
+### 🌐 Language Learning
+- Create vocabulary cards with example sentences
+- Generate grammar pattern cards
+- Build cards from reading materials
+
+### 🔬 STEM Studies  
+- Convert formulas into practice problems
+- Create diagram-based cards
+- Build concept relationship cards
+
+### 💼 Professional Learning
+- Create cards from documentation
+- Build terminology databases
+- Track skill progression
+
+## Power User Tips
+
+- **Web Content**: "Create cards from this article about machine learning"
+- **Code Learning**: "Generate cards explaining this Python function"
+- **Document Analysis**: "Extract key points from this PDF chapter"
+- **Bulk Management**: "Tag all biology cards and optimize their intervals"
+
 ## Links
 
 - [Anki-Connect Docs](https://github.com/FooSoft/anki-connect)
 - [MCP Specification](https://modelcontextprotocol.io)
 - [Anki Forums](https://forums.ankiweb.net)
+- [Claude Desktop](https://claude.ai/download)
+
+## Contributing
+
+We welcome contributions! Please check out our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 

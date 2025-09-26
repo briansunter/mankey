@@ -5,7 +5,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'bun.lockb', '*.config.js']
+    ignores: ['node_modules/**', 'dist/**', 'bun.lockb']
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -14,7 +14,7 @@ export default [
       ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
-        project: './tsconfig.json'
+        project: false
       },
       globals: {
         ...globals.node,
