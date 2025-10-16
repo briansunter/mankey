@@ -235,26 +235,103 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   }
 
   Object.entries(schema.shape).forEach(([key, value]) => {
-    const field = value as z.ZodTypeAny;
-    let type = "string";
-    let items = undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let field: any = value;
+    let isOptional = false;
 
-    // Determine type
-    if (field instanceof z.ZodNumber) {type = "number";} else if (field instanceof z.ZodBoolean) {type = "boolean";} else if (field instanceof z.ZodArray) {
+    // Unwrap optional types
+    while (field instanceof z.ZodOptional) {
+      isOptional = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      field = (field as any).innerType || field._def.innerType;
+    }
+    while (field instanceof z.ZodDefault) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      field = (field as any).innerType || field._def.innerType;
+    }
+
+    let type = "string";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let items: any = undefined;
+
+    // Determine type based on Zod type
+    if (field instanceof z.ZodNumber) {
+      type = "number";
+    } else if (field instanceof z.ZodBoolean) {
+      type = "boolean";
+    } else if (field instanceof z.ZodArray) {
       type = "array";
-      items = { type: "string" }; // Simplified
-    } else if (field instanceof z.ZodObject || field instanceof z.ZodRecord) {
+      // Get the inner type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let innerField: any = field._def.type;
+
+      // Unwrap optional inner types
+      while (innerField instanceof z.ZodOptional) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        innerField = (innerField as any).innerType || innerField._def.innerType;
+      }
+
+      if (innerField instanceof z.ZodNumber) {
+        items = { type: "number" };
+      } else if (innerField instanceof z.ZodBoolean) {
+        items = { type: "boolean" };
+      } else if (innerField instanceof z.ZodObject) {
+        items = { type: "object" };
+      } else if (innerField instanceof z.ZodUnion) {
+        // For unions in arrays, default to string
+        items = { type: "string" };
+      } else {
+        items = { type: "string" };
+      }
+    } else if (field instanceof z.ZodObject) {
+      type = "object";
+    } else if (field instanceof z.ZodUnion) {
+      // For unions, check if all are the same type
+      const types = new Set<string>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      field._def.options.forEach((opt: any) => {
+        if (opt instanceof z.ZodNumber) {
+          types.add("number");
+        } else if (opt instanceof z.ZodString) {
+          types.add("string");
+        } else if (opt instanceof z.ZodBoolean) {
+          types.add("boolean");
+        } else {
+          types.add("string");
+        }
+      });
+
+      // If all same type, use that type
+      if (types.size === 1) {
+        const typeArray = Array.from(types);
+        if (typeArray[0]) {
+          type = typeArray[0];
+        } else {
+          type = "string";
+        }
+      } else {
+        // Multiple types - default to string for simplicity
+        type = "string";
+      }
+    } else if (field instanceof z.ZodRecord) {
       type = "object";
     }
 
     const prop: Record<string, unknown> = { type };
     if (items) { prop.items = items; }
-    const fieldDef = (field as { _def?: { description?: string } })._def;
+
+    // Get description from Zod
+    const fieldDef = (value as { _def?: { description?: string } })._def;
     if (fieldDef?.description) {
       prop.description = fieldDef.description;
     }
+
     properties[key] = prop;
-    if (!field.isOptional()) {required.push(key);}
+
+    // Check if field is required (not optional)
+    if (!isOptional && !(value instanceof z.ZodOptional)) {
+      required.push(key);
+    }
   });
 
   return {

@@ -2,7 +2,6 @@
   "name": "mankey",
   "version": "1.0.5",
   "description": "MCP server for Anki integration via Anki-Connect",
-  "module": "src/index.ts",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +23,8 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/index.js",
+    "prepublishOnly": "npm run build",
     "dev": "bun --watch src/index.ts",
     "test": "bun test",
     "test:e2e": "bun test tests/*.test.ts",
