@@ -74,6 +74,17 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Start mock Anki-Connect server
+        run: |
+          bun tests/mock-anki-server.ts &
+          MOCK_PID=$!
+          echo "MOCK_PID=$MOCK_PID" >> $GITHUB_ENV
+          # Wait for server to start
+          sleep 2
+          # Verify server is running
+          curl -f http://127.0.0.1:8765 -X POST -H "Content-Type: application/json" -d '{"action":"version","version":6}' || exit 1
+          echo "Mock Anki-Connect server started (PID: $MOCK_PID)"
+
       - name: Build package
         run: bun run build
         continue-on-error: false
@@ -84,6 +95,13 @@ jobs:
           test -f dist/index.d.ts || (echo "dist/index.d.ts not found" && exit 1)
           head -1 dist/index.js | grep -q "#!/usr/bin/env node" || (echo "Shebang missing" && exit 1)
           echo "✓ Build artifacts verified"
+
+      - name: Stop mock server
+        if: always()
+        run: |
+          if [ ! -z "$MOCK_PID" ]; then
+            kill $MOCK_PID || true
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -109,10 +127,28 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Run tests (non-integration)
+      - name: Start mock Anki-Connect server
         run: |
-          # Run all tests, skip integration tests that require Anki
+          bun tests/mock-anki-server.ts &
+          MOCK_PID=$!
+          echo "MOCK_PID=$MOCK_PID" >> $GITHUB_ENV
+          # Wait for server to start
+          sleep 2
+          # Verify server is running
+          curl -f http://127.0.0.1:8765 -X POST -H "Content-Type: application/json" -d '{"action":"version","version":6}' || exit 1
+          echo "Mock Anki-Connect server started (PID: $MOCK_PID)"
+
+      - name: Run tests with mock server
+        run: |
+          # Run all tests with mock Anki-Connect server
           bun test --timeout 10000 2>&1 | tee test-output.log
+
+      - name: Stop mock server
+        if: always()
+        run: |
+          if [ ! -z "$MOCK_PID" ]; then
+            kill $MOCK_PID || true
+          fi
 
       - name: Upload test results
         if: always()
@@ -144,12 +180,30 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Start mock Anki-Connect server
+        run: |
+          bun tests/mock-anki-server.ts &
+          MOCK_PID=$!
+          echo "MOCK_PID=$MOCK_PID" >> $GITHUB_ENV
+          # Wait for server to start
+          sleep 2
+          # Verify server is running
+          curl -f http://127.0.0.1:8765 -X POST -H "Content-Type: application/json" -d '{"action":"version","version":6}' || exit 1
+          echo "Mock Anki-Connect server started (PID: $MOCK_PID)"
+
       - name: Build package
         run: bun run build
 
       - name: Test executable with node
         run: |
           echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node dist/index.js 2>&1 | head -20
+
+      - name: Stop mock server
+        if: always()
+        run: |
+          if [ ! -z "$MOCK_PID" ]; then
+            kill $MOCK_PID || true
+          fi
 
       - name: Verify package.json configuration
         run: |
