@@ -1,49 +1,47 @@
 # Source files
 src/
 tests/
+docs/
+screenshots/
+scripts/
 
-# Configuration files
+# Config files
 .github/
-.vscode/
-bun.lockb
+.cursor/
+.claude/
+.env*
+!.env.example
+.husky/
+.git*
 tsconfig.json
+eslint.config.js
 eslint.config.mjs
+commitlint.config.cjs
+bunfig.toml
+bun.lockb
+*.config.*
+CONTRIBUTING.md
 
-# Test files
-*.test.ts
+# Build artifacts to exclude
+*.tsbuildinfo
 *.test.js
-test-*.ts
-test-*.js
-__tests__/
+*.test.ts
+*.test.d.ts
+*.map
 
-# Development files
-.env
-.env.local
-*.log
+# Node modules
 node_modules/
 
-# Documentation source
-docs/
-
-# Build artifacts not needed
-*.map
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # OS files
 .DS_Store
 Thumbs.db
-
-# Editor files
-*.swp
-*.swo
-*~
-.idea/
-
-# Git files
-.git/
-.gitignore
-
-# CI/CD
-.github/
 
 # Examples and demos
 examples/
