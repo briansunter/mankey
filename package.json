@@ -39,6 +39,7 @@
     "test:e2e:edge": "bun test tests/test-edge-cases.test.ts",
     "test:e2e:coverage": "bun test tests/*.test.ts --coverage",
     "test:e2e:watch": "bun test --watch tests/*.test.ts",
+    "test:coverage": "bun scripts/check-coverage.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

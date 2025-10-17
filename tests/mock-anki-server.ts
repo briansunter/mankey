@@ -42,15 +42,29 @@ function mockResponse(action: string, params?: Record<string, unknown>): unknown
     case "deckNamesAndIds":
       return { "Default": 1 };
 
-    case "getDeckStats":
-      return {
-        "Default": {
-          new_count: 0,
-          learn_count: 0,
-          review_count: 0,
-          total_in_deck: MOCK_DATA.notes.size
-        }
-      };
+    case "getDeckStats": {
+      const decks = (params?.decks || ["Default"]) as string[];
+      const stats: Record<string, unknown> = {};
+
+      decks.forEach(deckName => {
+        // Count cards by queue state for this deck
+        const deckCards = Array.from(MOCK_DATA.cards.values())
+          .filter(c => c.deckName === deckName);
+
+        const new_count = deckCards.filter(c => c.queue === 0).length;
+        const learn_count = deckCards.filter(c => c.queue === 1).length;
+        const review_count = deckCards.filter(c => c.queue === 2).length;
+
+        stats[deckName] = {
+          new_count,
+          learn_count,
+          review_count,
+          total_in_deck: deckCards.length
+        };
+      });
+
+      return stats;
+    }
 
     case "getDeckConfig":
       return {
