@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/briansunter/mankey/compare/v1.1.2...v1.1.3) (2025-10-18)
+
+
+### Bug Fixes
+
+* extract CSS string from modelStyling response ([a13245a](https://github.com/briansunter/mankey/commit/a13245acb9157f50d55e3238df9153dd63f41785))
+
 ## [1.1.2](https://github.com/briansunter/mankey/compare/v1.1.1...v1.1.2) (2025-10-18)
 
 
