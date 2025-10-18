@@ -951,15 +951,15 @@ const tools: Record<string, ToolDef> = {
   createModel: {
     description: "Creates a custom note type with specified fields and card templates. Requires careful template syntax: {{Field}} for replacements, {{#Field}}...{{/Field}} for conditionals. Templates generate cards from notes. CSS styling is shared across all templates. Model name must be unique. Returns created model object. Complex operation - consider cloning existing models instead",
     schema: z.object({
-      modelName: z.string().describe("Model name"),
-      inOrderFields: z.array(z.string()).describe("Field names"),
-      css: z.string().optional().describe("Card CSS"),
-      isCloze: z.boolean().optional(),
+      modelName: z.string().min(1).describe("Unique model name (case-sensitive)"),
+      inOrderFields: z.array(z.string()).min(1).describe("Field names in display order (at least one required)"),
+      css: z.string().optional().describe("CSS styling for all cards in this model"),
+      isCloze: z.boolean().optional().default(false).describe("Whether this is a cloze deletion model"),
       cardTemplates: z.array(z.object({
-        Name: z.string().optional(),
-        Front: z.string(),
-        Back: z.string(),
-      })),
+        Name: z.string().min(1).describe("Template name (required)"),
+        Front: z.string().describe("Front template HTML (question side)"),
+        Back: z.string().describe("Back template HTML (answer side)"),
+      })).min(1).describe("Card templates (at least one required)"),
     }),
     handler: async (args) => ankiConnect("createModel", args),
   },
