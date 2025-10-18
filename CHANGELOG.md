@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/briansunter/mankey/compare/v1.1.3...v1.1.4) (2025-10-18)
+
+
+### Bug Fixes
+
+* improve error messages with actionable guidance ([a096f86](https://github.com/briansunter/mankey/commit/a096f862abea796e59ff7cddcf9a34de345ccadb))
+
 ## [1.1.3](https://github.com/briansunter/mankey/compare/v1.1.2...v1.1.3) (2025-10-18)
 
 
