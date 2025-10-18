@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/briansunter/mankey/compare/v1.1.1...v1.1.2) (2025-10-18)
+
+
+### Bug Fixes
+
+* properly unwrap ZodDefault→ZodOptional chains in zodToJsonSchema ([2fdd7b8](https://github.com/briansunter/mankey/commit/2fdd7b82a4e45c0195071761b55dabc82e897107))
+
 ## [1.1.1](https://github.com/briansunter/mankey/compare/v1.1.0...v1.1.1) (2025-10-18)
 
 
