@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/briansunter/mankey/compare/v1.0.5...v1.1.0) (2025-10-18)
+
+
+### Bug Fixes
+
+* createModel schema validation - require Name field and add min length checks ([70aa2bc](https://github.com/briansunter/mankey/commit/70aa2bc234c47ddcc595c6a184e758fb1446d700))
+* disable footer-max-line-length in commitlint for semantic-release compatibility ([9a29132](https://github.com/briansunter/mankey/commit/9a29132facf8bde94def668af7800496119df686))
+
+
+### Features
+
+* add comprehensive CI/CD workflow for branch validation ([#2](https://github.com/briansunter/mankey/issues/2)) ([4059687](https://github.com/briansunter/mankey/commit/40596873b5159e25f8df79bc7579921ee82d398b))
+
 ## [1.0.5](https://github.com/briansunter/mankey/compare/v1.0.4...v1.0.5) (2025-09-26)
 
 
