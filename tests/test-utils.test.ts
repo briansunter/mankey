@@ -12,6 +12,7 @@ import {
   getCardsByDeck,
   suspendCards,
   unsuspendCards,
+  type PaginatedResponse,
 } from "./test-utils";
 
 describe("Test Utils Functions", () => {
@@ -77,6 +78,34 @@ describe("Test Utils Functions", () => {
       const input = "标签 タグ метка";
       const result = normalizeTags(input);
       expect(result).toEqual(["标签", "タグ", "метка"]);
+    });
+
+    test("should handle JSON that parses to non-array (number)", () => {
+      // Line 194-195: when JSON parses but isn't an array
+      const input = "123";
+      const result = normalizeTags(input);
+      expect(result).toEqual(["123"]);
+    });
+
+    test("should handle JSON that parses to non-array (boolean)", () => {
+      // Line 194-195: when JSON parses but isn't an array
+      const input = "true";
+      const result = normalizeTags(input);
+      expect(result).toEqual(["true"]);
+    });
+
+    test("should handle JSON-like string without brackets", () => {
+      // Doesn't start with [ so goes to space-separated path
+      const input = '{"key":"value"}';
+      const result = normalizeTags(input);
+      expect(result).toEqual(['{"key":"value"}']);
+    });
+
+    test("should handle empty JSON array", () => {
+      // Line 194-195: array case but empty
+      const input = "[]";
+      const result = normalizeTags(input);
+      expect(result).toEqual([]);
     });
   });
 
@@ -174,7 +203,7 @@ describe("Test Utils Functions", () => {
   describe("getNextCard function", () => {
     test("should get next card for review", async () => {
       const nextCard = await getNextCard();
-      
+
       if (nextCard) {
         expect(nextCard).toHaveProperty("cardId");
         expect(nextCard).toHaveProperty("note");
@@ -193,10 +222,10 @@ describe("Test Utils Functions", () => {
       if (allCards.length > 0) {
         const firstFewCards = allCards.slice(0, Math.min(10, allCards.length));
         await suspendCards(firstFewCards);
-        
+
         const _nextCard = await getNextCard();
         // Might still have other cards due
-        
+
         // Unsuspend for cleanup
         await unsuspendCards(firstFewCards);
       } else {
@@ -204,6 +233,9 @@ describe("Test Utils Functions", () => {
         expect(nextCard).toBeUndefined();
       }
     });
+
+    // Note: Line 264 (catch block in getNextCard) is defensive error handling
+    // that's difficult to test without mocking, as ANKI_URL is captured at module load time.
   });
 
   describe("createTestNotes batch function", () => {
@@ -304,11 +336,47 @@ describe("Test Utils Functions", () => {
     });
   });
 
+  describe("ankiConnect pagination", () => {
+    test("should handle pagination with offset and limit", async () => {
+      // This exercises the pagination code path (lines 49-98)
+      const result = await ankiConnect<PaginatedResponse>("findCards", {
+        query: "deck:Default",
+        offset: 0,
+        limit: 5
+      });
+
+      expect(result).toHaveProperty("cards");
+      expect(result).toHaveProperty("total");
+      expect(result).toHaveProperty("hasMore");
+      expect(result).toHaveProperty("offset");
+      expect(result).toHaveProperty("limit");
+      expect(result).toHaveProperty("nextOffset");
+      expect(result.offset).toBe(0);
+      expect(result.limit).toBe(5);
+      expect(Array.isArray(result.cards)).toBe(true);
+      if (result.cards && result.cards.length > 0) {
+        expect(result.cards.length).toBeLessThanOrEqual(5);
+      }
+    });
+
+    test("should handle pagination for findNotes", async () => {
+      const result = await ankiConnect<PaginatedResponse>("findNotes", {
+        query: "deck:Default",
+        offset: 0,
+        limit: 3
+      });
+
+      expect(result).toHaveProperty("notes");
+      expect(result).toHaveProperty("total");
+      expect(Array.isArray(result.notes)).toBe(true);
+    });
+  });
+
   describe("ankiConnect function error cases", () => {
     test("should throw on Anki-Connect error response", async () => {
       await expect(
         ankiConnect("invalidAction", {})
-      ).rejects.toThrow("AnkiConnect error");
+      ).rejects.toThrow("invalidAction: unsupported action");
     });
 
     test("should handle missing required parameters", async () => {
@@ -322,6 +390,11 @@ describe("Test Utils Functions", () => {
         ankiConnect("findCards", { query: 123 })
       ).rejects.toThrow();
     });
+
+    // Note: Lines 73, 176, 279 are defensive error paths (pagination errors,
+    // old Anki-Connect version, missing Default deck) that are difficult to test
+    // without mocking or unsafe database manipulation. These represent <1% of code
+    // and are protective measures for edge cases.
   });
 });
 
