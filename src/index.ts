@@ -276,7 +276,8 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
       } else if (innerField instanceof z.ZodBoolean) {
         items = { type: "boolean" };
       } else if (innerField instanceof z.ZodObject) {
-        items = { type: "object" };
+        // Recursively convert nested object schema
+        items = zodToJsonSchema(innerField);
       } else if (innerField instanceof z.ZodUnion) {
         // For unions in arrays, default to string
         items = { type: "string" };
