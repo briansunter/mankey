@@ -390,4 +390,269 @@ code {
     expect(noteIds).toHaveLength(1);
     createdNotes.push(noteIds[0]);
   });
+
+  describe("Model Update Operations", () => {
+    test("should update model styling and preserve CSS", async () => {
+      const modelName = `TestUpdateStyling_${Date.now()}`;
+      createdModels.push(modelName);
+
+      // Create model with initial CSS
+      await ankiConnect("createModel", {
+        modelName,
+        inOrderFields: ["Front", "Back"],
+        css: ".card { font-size: 16px; color: blue; background: white; }",
+        cardTemplates: [
+          {
+            Name: "Card 1",
+            Front: "{{Front}}",
+            Back: "{{FrontSide}}<hr id=answer>{{Back}}",
+          },
+        ],
+      });
+
+      // Verify initial styling
+      const initialStyling = await ankiConnect<string>("modelStyling", { modelName });
+      expect(initialStyling).toContain("color: blue");
+
+      // Update styling with complex CSS
+      const newCSS = `.card {
+  font-family: 'Georgia', serif;
+  font-size: 24px;
+  color: #ff0000;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.front {
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}`;
+
+      const result = await ankiConnect("updateModelStyling", {
+        model: {
+          name: modelName,
+          css: newCSS,
+        },
+      });
+
+      // updateModelStyling returns null on success
+      expect(result).toBeNull();
+
+      // Verify the update worked
+      const updatedStyling = await ankiConnect<string>("modelStyling", { modelName });
+      expect(updatedStyling).toBe(newCSS);
+      expect(updatedStyling).toContain("linear-gradient");
+      expect(updatedStyling).toContain("text-shadow");
+      expect(updatedStyling).toContain("#ff0000");
+    });
+
+    test("should update model templates and preserve HTML", async () => {
+      const modelName = `TestUpdateTemplates_${Date.now()}`;
+      createdModels.push(modelName);
+
+      // Create model with simple templates
+      await ankiConnect("createModel", {
+        modelName,
+        inOrderFields: ["Question", "Answer"],
+        cardTemplates: [
+          {
+            Name: "Card 1",
+            Front: "{{Question}}",
+            Back: "{{Answer}}",
+          },
+        ],
+      });
+
+      // Verify initial templates
+      const initialTemplates = await ankiConnect<Record<string, { Front: string; Back: string }>>(
+        "modelTemplates",
+        { modelName }
+      );
+      expect(initialTemplates["Card 1"].Front).toBe("{{Question}}");
+
+      // Update templates with HTML and CSS classes
+      const result = await ankiConnect("updateModelTemplates", {
+        model: {
+          name: modelName,
+          templates: {
+            "Card 1": {
+              Front: '<div class="question"><strong>❓ {{Question}}</strong></div>',
+              Back: '{{FrontSide}}<hr id="answer"><div class="answer">✅ <em>{{Answer}}</em></div>',
+            },
+          },
+        },
+      });
+
+      // updateModelTemplates returns null on success
+      expect(result).toBeNull();
+
+      // Verify the update worked
+      const updatedTemplates = await ankiConnect<Record<string, { Front: string; Back: string }>>(
+        "modelTemplates",
+        { modelName }
+      );
+      expect(updatedTemplates["Card 1"].Front).toContain('<div class="question">');
+      expect(updatedTemplates["Card 1"].Front).toContain("<strong>");
+      expect(updatedTemplates["Card 1"].Front).toContain("❓");
+      expect(updatedTemplates["Card 1"].Back).toContain('<div class="answer">');
+      expect(updatedTemplates["Card 1"].Back).toContain("<em>");
+      expect(updatedTemplates["Card 1"].Back).toContain("✅");
+    });
+
+    test("should update both styling and templates together", async () => {
+      const modelName = `TestUpdateBoth_${Date.now()}`;
+      createdModels.push(modelName);
+
+      // Create model
+      await ankiConnect("createModel", {
+        modelName,
+        inOrderFields: ["Word", "Definition"],
+        css: ".card { background: white; }",
+        cardTemplates: [
+          {
+            Name: "Recognition",
+            Front: "{{Word}}",
+            Back: "{{Definition}}",
+          },
+        ],
+      });
+
+      // Update styling
+      const newCSS = `.card {
+  background: #f5f5f5;
+  padding: 20px;
+}
+.word {
+  font-size: 28px;
+  color: #2c3e50;
+}`;
+
+      await ankiConnect("updateModelStyling", {
+        model: { name: modelName, css: newCSS },
+      });
+
+      // Update templates
+      await ankiConnect("updateModelTemplates", {
+        model: {
+          name: modelName,
+          templates: {
+            Recognition: {
+              Front: '<div class="word">{{Word}}</div>',
+              Back: '{{FrontSide}}<hr id="answer"><div class="definition">{{Definition}}</div>',
+            },
+          },
+        },
+      });
+
+      // Verify both updates
+      const styling = await ankiConnect<string>("modelStyling", { modelName });
+      const templates = await ankiConnect<Record<string, { Front: string; Back: string }>>(
+        "modelTemplates",
+        { modelName }
+      );
+
+      expect(styling).toContain(".word");
+      expect(styling).toContain("#2c3e50");
+      expect(templates.Recognition.Front).toContain('<div class="word">');
+      expect(templates.Recognition.Back).toContain('<div class="definition">');
+    });
+
+    test("should handle updating model with multiple templates", async () => {
+      const modelName = `TestUpdateMultiTemplate_${Date.now()}`;
+      createdModels.push(modelName);
+
+      // Create model with two templates
+      await ankiConnect("createModel", {
+        modelName,
+        inOrderFields: ["English", "Spanish"],
+        cardTemplates: [
+          {
+            Name: "English to Spanish",
+            Front: "{{English}}",
+            Back: "{{Spanish}}",
+          },
+          {
+            Name: "Spanish to English",
+            Front: "{{Spanish}}",
+            Back: "{{English}}",
+          },
+        ],
+      });
+
+      // Update both templates
+      await ankiConnect("updateModelTemplates", {
+        model: {
+          name: modelName,
+          templates: {
+            "English to Spanish": {
+              Front: '<div class="en">🇺🇸 {{English}}</div>',
+              Back: '<div class="es">🇪🇸 {{Spanish}}</div>',
+            },
+            "Spanish to English": {
+              Front: '<div class="es">🇪🇸 {{Spanish}}</div>',
+              Back: '<div class="en">🇺🇸 {{English}}</div>',
+            },
+          },
+        },
+      });
+
+      // Verify both templates updated
+      const templates = await ankiConnect<Record<string, { Front: string; Back: string }>>(
+        "modelTemplates",
+        { modelName }
+      );
+
+      expect(templates["English to Spanish"].Front).toContain("🇺🇸");
+      expect(templates["Spanish to English"].Front).toContain("🇪🇸");
+      expect(templates["English to Spanish"].Back).toContain("🇪🇸");
+      expect(templates["Spanish to English"].Back).toContain("🇺🇸");
+    });
+
+    test("should preserve special characters and entities in updated CSS", async () => {
+      const modelName = `TestUpdateSpecialCSS_${Date.now()}`;
+      createdModels.push(modelName);
+
+      await ankiConnect("createModel", {
+        modelName,
+        inOrderFields: ["Front", "Back"],
+        css: ".card { color: black; }",
+        cardTemplates: [
+          {
+            Name: "Card 1",
+            Front: "{{Front}}",
+            Back: "{{Back}}",
+          },
+        ],
+      });
+
+      // CSS with special characters, quotes, and comments
+      const specialCSS = `/* This is a comment */
+.card {
+  font-family: "Courier New", 'Monaco', monospace;
+  content: "→ Test → Content";
+  background: url('data:image/svg+xml;utf8,<svg>...</svg>');
+}
+
+.special::before {
+  content: "« ";
+}
+
+.special::after {
+  content: " »";
+}`;
+
+      await ankiConnect("updateModelStyling", {
+        model: { name: modelName, css: specialCSS },
+      });
+
+      const styling = await ankiConnect<string>("modelStyling", { modelName });
+      expect(styling).toContain("« ");
+      expect(styling).toContain(" »");
+      expect(styling).toContain("→");
+      expect(styling).toContain("/* This is a comment */");
+    });
+  });
 });
