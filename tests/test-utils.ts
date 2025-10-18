@@ -114,6 +114,12 @@ export async function ankiConnect<T = unknown>(
   if (result.error) {
     throw new Error(`AnkiConnect error: ${result.error}`);
   }
+
+  // Special handling for modelStyling - extract CSS string
+  if (action === "modelStyling" && typeof result.result === "object" && result.result !== null && "css" in result.result) {
+    return (result.result as { css: string }).css as T;
+  }
+
   return result.result;
 }
 

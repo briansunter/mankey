@@ -349,11 +349,11 @@ describe("Anki-Connect Integration Tests", () => {
     });
 
     test("should get model styling", async () => {
-      const styling = await ankiConnect<{ css: string }>("modelStyling", {
+      const styling = await ankiConnect<string>("modelStyling", {
         modelName: "Basic",
       });
-      expect(styling).toHaveProperty("css");
-      expect(typeof styling.css).toBe("string");
+      expect(typeof styling).toBe("string");
+      expect(styling.length).toBeGreaterThan(0);
     });
 
     test("should get model templates", async () => {

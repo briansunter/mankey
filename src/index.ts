@@ -1446,8 +1446,14 @@ const tools: Record<string, ToolDef> = {
     schema: z.object({
       modelName: z.string().describe("Model name"),
     }),
-    handler: async ({ modelName }) => 
-      ankiConnect("modelStyling", { modelName }),
+    handler: async ({ modelName }) => {
+      const result = await ankiConnect("modelStyling", { modelName });
+      // Anki-Connect returns { css: "..." }, extract the CSS string
+      if (typeof result === "object" && result !== null && "css" in result) {
+        return (result as { css: string }).css;
+      }
+      return result as string;
+    },
   },
   
   updateModelTemplates: {
