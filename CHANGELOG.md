@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/briansunter/mankey/compare/v1.1.0...v1.1.1) (2025-10-18)
+
+
+### Bug Fixes
+
+* zodToJsonSchema now recursively converts nested object schemas for MCP ([8a0fa47](https://github.com/briansunter/mankey/commit/8a0fa47f0fe1b741f841cae8f6e4bd169393574a))
+
 # [1.1.0](https://github.com/briansunter/mankey/compare/v1.0.5...v1.1.0) (2025-10-18)
 
 
