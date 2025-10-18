@@ -239,15 +239,16 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
     let field: any = value;
     let isOptional = false;
 
-    // Unwrap optional types
-    while (field instanceof z.ZodOptional) {
-      isOptional = true;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      field = (field as any).innerType || field._def.innerType;
-    }
-    while (field instanceof z.ZodDefault) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      field = (field as any).innerType || field._def.innerType;
+    // Unwrap all wrapper types (ZodOptional, ZodDefault) in any order
+    while (field instanceof z.ZodOptional || field instanceof z.ZodDefault) {
+      if (field instanceof z.ZodOptional) {
+        isOptional = true;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        field = (field as any).innerType || field._def.innerType;
+      } else if (field instanceof z.ZodDefault) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        field = (field as any).innerType || field._def.innerType;
+      }
     }
 
     let type = "string";
