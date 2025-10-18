@@ -109,3 +109,63 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## Publishing & Releases
+
+This package uses **semantic-release** for automated publishing to npm. Releases are triggered automatically when commits are pushed to the `master` branch.
+
+### Semantic Release Workflow
+
+1. **Commit Format**: Follow conventional commits (feat:, fix:, chore:, etc.)
+2. **Automatic Versioning**:
+   - `fix:` commits → patch version bump (1.0.0 → 1.0.1)
+   - `feat:` commits → minor version bump (1.0.0 → 1.1.0)
+   - `BREAKING CHANGE:` → major version bump (1.0.0 → 2.0.0)
+3. **GitHub Actions**: The `.github/workflows/release.yml` workflow runs on push to master
+4. **Automatic Steps**:
+   - Analyzes commits since last release
+   - Determines next version
+   - Updates `package.json` and `CHANGELOG.md`
+   - Publishes to npm
+   - Creates GitHub release with notes
+   - Commits version bump with `chore(release): X.X.X [skip ci]`
+
+### Known Issues & Solutions
+
+#### Commitlint Footer Length Issue
+
+**Problem**: Semantic-release generates changelog entries with long GitHub URLs in the footer that exceed commitlint's default 100 character limit, causing release commits to fail with:
+
+```
+✖   footer's lines must not be longer than 100 characters [footer-max-line-length]
+```
+
+**Solution**: The `commitlint.config.cjs` file disables `footer-max-line-length` validation:
+
+```js
+rules: {
+  'body-max-line-length': [0, 'always'],
+  'footer-max-line-length': [0, 'always'] // Required for semantic-release
+}
+```
+
+#### Manual Publishing (If Needed)
+
+If semantic-release fails and you need to publish manually:
+
+```bash
+bun run build
+npm version patch  # or minor/major
+npm publish
+git push --follow-tags
+```
+
+### Verifying Published Package
+
+```bash
+# Check latest version on npm
+npm view mankey version
+
+# Test installation
+npx mankey
+```
