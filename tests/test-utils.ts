@@ -112,7 +112,21 @@ export async function ankiConnect<T = unknown>(
 
   const result = (await response.json()) as AnkiResponse<T>;
   if (result.error) {
-    throw new Error(`AnkiConnect error: ${result.error}`);
+    // Provide helpful error messages matching the MCP server behavior
+    const cleanError = result.error.replace(/^Anki-Connect: /, "");
+    let errorMessage = `${action}: ${cleanError}`;
+
+    if (cleanError.includes("duplicate")) {
+      errorMessage = `${action}: Note already exists with this content. ${cleanError.includes("allowDuplicate") ? "Set allowDuplicate:true to bypass this check." : "Use allowDuplicate parameter or modify the note content."}`;
+    } else if (cleanError.includes("deck") && cleanError.includes("not found")) {
+      errorMessage = `${action}: Deck not found. Create the deck first or check the deck name spelling.`;
+    } else if (cleanError.includes("model") && cleanError.includes("not found")) {
+      errorMessage = `${action}: Note type (model) not found. Check the modelName parameter.`;
+    } else if (cleanError.includes("field")) {
+      errorMessage = `${action}: Field error - ${cleanError}. Check that field names match the note type exactly (case-sensitive).`;
+    }
+
+    throw new Error(errorMessage);
   }
 
   // Special handling for modelStyling - extract CSS string
