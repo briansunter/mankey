@@ -39,11 +39,29 @@ export const mediaTools = {
 
   getMediaFilesNames: {
     description:
-      "Lists all media files in the collection including images, audio, and video files. Pattern supports wildcards (* and ?). Returns array of filenames (not paths). Useful for media management, finding unused files, or bulk operations. Large collections may have thousands of files",
+      "Lists all media files in the collection including images, audio, and video files. Pattern supports wildcards (* and ?). Returns paginated array of filenames (not paths). Useful for media management, finding unused files, or bulk operations",
     schema: z.object({
       pattern: z.string().optional().describe("File pattern"),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum files to return (default 100, max 1000)"),
     }),
-    handler: async ({ pattern }: { pattern?: string }) => ankiConnect("getMediaFilesNames", { pattern }),
+    handler: async ({ pattern, offset = 0, limit = 100 }: { pattern?: string; offset?: number; limit?: number }) => {
+      const clampedLimit = Math.min(limit, 1000);
+      const allFiles: string[] = await ankiConnect("getMediaFilesNames", { pattern });
+      const total = allFiles.length;
+      const files = allFiles.slice(offset, offset + clampedLimit);
+      const hasMore = offset + clampedLimit < total;
+      return {
+        files,
+        pagination: {
+          offset,
+          limit: clampedLimit,
+          total,
+          hasMore,
+          nextOffset: hasMore ? offset + clampedLimit : null,
+        },
+      };
+    },
   },
 
   deleteMediaFile: {

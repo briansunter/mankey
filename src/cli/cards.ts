@@ -62,12 +62,13 @@ export function registerCardCommands(program: Command): void {
     .command("next")
     .description("Get next cards due for review")
     .option("--deck <deck>", "Deck name")
+    .option("--offset <n>", "Starting position", "0")
     .option("--limit <n>", "Maximum cards", "10")
-    .action(async (options: { deck?: string; limit: string }) => {
+    .action(async (options: { deck?: string; offset: string; limit: string }) => {
       const result = await cardTools.getNextCards.handler({
         deck: options.deck,
         limit: parseInt(options.limit, 10),
-        offset: 0,
+        offset: parseInt(options.offset, 10),
       });
       console.log(JSON.stringify(result, null, 2));
     });

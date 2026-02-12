@@ -7,8 +7,13 @@ export function registerDeckCommands(program: Command): void {
   deck
     .command("list")
     .description("List all decks")
-    .action(async () => {
-      const result = await deckTools.deckNames.handler({ offset: 0, limit: 10000 });
+    .option("--offset <n>", "Starting position", "0")
+    .option("--limit <n>", "Maximum decks to return", "1000")
+    .action(async (options: { offset: string; limit: string }) => {
+      const result = await deckTools.deckNames.handler({
+        offset: parseInt(options.offset, 10),
+        limit: parseInt(options.limit, 10),
+      });
       console.log(JSON.stringify(result, null, 2));
     });
 

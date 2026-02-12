@@ -11,29 +11,53 @@ export const statsTools = {
 
   getDueCardsDetailed: {
     description:
-      "Get due cards with detailed categorization by queue type (learning vs review). Use 'current' for current deck",
+      "Get due cards with detailed categorization by queue type (learning vs review). Use 'current' for current deck. Returns paginated results",
     schema: z.object({
       deck: z.string().describe("Deck name (or 'current' for current deck)").optional(),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(50).describe("Maximum cards to return (default 50, max 500)"),
     }),
-    handler: async ({ deck }: { deck?: string }) => {
+    handler: async ({ deck, offset = 0, limit = 50 }: { deck?: string; offset?: number; limit?: number }) => {
+      const clampedLimit = Math.min(limit, 500);
+
       // Query for different card states
       const baseQuery = deck === "current" ? "deck:current" : deck ? `deck:"${deck}"` : "";
 
       // Learning cards (queue 1 or 3, due soon)
       const learningQuery = baseQuery ? `${baseQuery} (queue:1 OR queue:3)` : "(queue:1 OR queue:3)";
-      const learningCards = await ankiConnect("findCards", { query: learningQuery });
+      const learningCardIds = await ankiConnect("findCards", { query: learningQuery });
 
       // Review cards (queue 2, due today or overdue)
       const reviewQuery = baseQuery ? `${baseQuery} is:due` : "is:due";
-      const reviewCards = await ankiConnect("findCards", { query: reviewQuery });
+      const reviewCardIds = await ankiConnect("findCards", { query: reviewQuery });
 
-      // Get info for all cards
-      const allCardIds = [...learningCards, ...reviewCards];
-      if (allCardIds.length === 0) {
-        return { learning: [], review: [], total: 0 };
+      const totalLearning = learningCardIds.length;
+      const totalReview = reviewCardIds.length;
+      const total = totalLearning + totalReview;
+
+      if (total === 0) {
+        return {
+          learning: [],
+          review: [],
+          total: 0,
+          pagination: { offset: 0, limit: clampedLimit, total: 0, hasMore: false, nextOffset: null },
+        };
       }
 
-      const cardInfo = await ankiConnect("cardsInfo", { cards: allCardIds });
+      // Combined IDs: learning first, then review (matching Anki's order)
+      const allCardIds = [...learningCardIds, ...reviewCardIds];
+      const pageIds = allCardIds.slice(offset, offset + clampedLimit);
+
+      if (pageIds.length === 0) {
+        return {
+          learning: [],
+          review: [],
+          total,
+          pagination: { offset, limit: clampedLimit, total, hasMore: false, nextOffset: null },
+        };
+      }
+
+      const cardInfo = await ankiConnect("cardsInfo", { cards: pageIds });
 
       // Separate by actual queue type
       const learning: Array<{
@@ -83,20 +107,49 @@ export const statsTools = {
       // Sort review by due date
       review.sort((a, b) => a.due - b.due);
 
+      const hasMore = offset + clampedLimit < total;
       return {
-        learning: learning,
-        review: review,
-        total: learning.length + review.length,
-        note: "Learning cards (including relearning) are shown before review cards in Anki",
+        learning,
+        review,
+        total,
+        totalLearning,
+        totalReview,
+        pagination: {
+          offset,
+          limit: clampedLimit,
+          total,
+          hasMore,
+          nextOffset: hasMore ? offset + clampedLimit : null,
+        },
       };
     },
   },
 
   getNumCardsReviewedByDay: {
     description:
-      "Gets number of reviews performed on a specific day. Date format: Unix timestamp (seconds since epoch). Returns total review count including new, learning, and review cards. Useful for tracking study patterns and consistency. Historical data available since collection creation",
-    schema: z.object({}),
-    handler: async () => ankiConnect("getNumCardsReviewedByDay"),
+      "Gets number of reviews performed per day. Returns paginated entries sorted by date. Useful for tracking study patterns and consistency. Historical data available since collection creation",
+    schema: z.object({
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum entries to return (default 100, max 1000)"),
+    }),
+    handler: async ({ offset = 0, limit = 100 }: { offset?: number; limit?: number }) => {
+      const clampedLimit = Math.min(limit, 1000);
+      const data: Record<string, number> = await ankiConnect("getNumCardsReviewedByDay");
+      const allEntries = Object.entries(data);
+      const total = allEntries.length;
+      const entries = allEntries.slice(offset, offset + clampedLimit);
+      const hasMore = offset + clampedLimit < total;
+      return {
+        entries: Object.fromEntries(entries),
+        pagination: {
+          offset,
+          limit: clampedLimit,
+          total,
+          hasMore,
+          nextOffset: hasMore ? offset + clampedLimit : null,
+        },
+      };
+    },
   },
 
   getCollectionStatsHTML: {
@@ -111,13 +164,40 @@ export const statsTools = {
 
   cardReviews: {
     description:
-      "Gets complete review history for specified cards. Returns array of review arrays, each containing: reviewTime, cardID, ease, interval, lastInterval, factor, reviewDuration. Essential for analyzing learning patterns, identifying problem cards, or exporting review data. Large histories may be substantial",
+      "Gets review history for a deck starting from a review ID. Returns paginated array of review entries containing: reviewTime, cardID, ease, interval, lastInterval, factor, reviewDuration. Essential for analyzing learning patterns",
     schema: z.object({
       deck: z.string().describe("Deck name"),
       startID: z.number().describe("Start review ID"),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum reviews to return (default 100, max 1000)"),
     }),
-    handler: async ({ deck, startID }: { deck: string; startID: number }) =>
-      ankiConnect("cardReviews", { deck, startID }),
+    handler: async ({
+      deck,
+      startID,
+      offset = 0,
+      limit = 100,
+    }: {
+      deck: string;
+      startID: number;
+      offset?: number;
+      limit?: number;
+    }) => {
+      const clampedLimit = Math.min(limit, 1000);
+      const allReviews = await ankiConnect("cardReviews", { deck, startID });
+      const total = allReviews.length;
+      const reviews = allReviews.slice(offset, offset + clampedLimit);
+      const hasMore = offset + clampedLimit < total;
+      return {
+        reviews,
+        pagination: {
+          offset,
+          limit: clampedLimit,
+          total,
+          hasMore,
+          nextOffset: hasMore ? offset + clampedLimit : null,
+        },
+      };
+    },
   },
 
   getLatestReviewID: {
@@ -131,13 +211,38 @@ export const statsTools = {
 
   getReviewsOfCards: {
     description:
-      "Gets review entries for specific cards from the review log. More targeted than cardReviews. Returns review entries with timestamps, ease ratings, and intervals. Useful for detailed card analysis or custom statistics. Handles multiple cards efficiently",
+      "Gets review entries for specific cards from the review log. More targeted than cardReviews. Returns paginated review entries with timestamps, ease ratings, and intervals. Useful for detailed card analysis or custom statistics",
     schema: z.object({
       cards: z.array(z.union([z.number(), z.string()])).describe("Card IDs"),
+      offset: z.number().optional().default(0).describe("Starting position for pagination"),
+      limit: z.number().optional().default(100).describe("Maximum reviews to return (default 100, max 1000)"),
     }),
-    handler: async ({ cards }: { cards: Array<number | string> }) =>
-      ankiConnect("getReviewsOfCards", {
+    handler: async ({
+      cards,
+      offset = 0,
+      limit = 100,
+    }: {
+      cards: Array<number | string>;
+      offset?: number;
+      limit?: number;
+    }) => {
+      const clampedLimit = Math.min(limit, 1000);
+      const allReviews = await ankiConnect("getReviewsOfCards", {
         cards: cards.map((id: string | number) => (typeof id === "string" ? parseInt(id, 10) : id)),
-      }),
+      });
+      const total = allReviews.length;
+      const page = allReviews.slice(offset, offset + clampedLimit);
+      const hasMore = offset + clampedLimit < total;
+      return {
+        reviews: page,
+        pagination: {
+          offset,
+          limit: clampedLimit,
+          total,
+          hasMore,
+          nextOffset: hasMore ? offset + clampedLimit : null,
+        },
+      };
+    },
   },
 } satisfies Record<string, ToolDef>;

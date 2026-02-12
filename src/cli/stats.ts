@@ -16,9 +16,13 @@ export function registerStatsCommands(program: Command): void {
     .command("due")
     .description("Get due cards with details")
     .option("--deck <deck>", "Deck name")
-    .action(async (options: { deck?: string }) => {
+    .option("--offset <n>", "Starting position", "0")
+    .option("--limit <n>", "Maximum cards to return", "50")
+    .action(async (options: { deck?: string; offset?: string; limit?: string }) => {
       const result = await statsTools.getDueCardsDetailed.handler({
         deck: options.deck,
+        offset: parseInt(options.offset || "0", 10),
+        limit: parseInt(options.limit || "50", 10),
       });
       console.log(JSON.stringify(result, null, 2));
     });

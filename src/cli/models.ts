@@ -7,8 +7,13 @@ export function registerModelCommands(program: Command): void {
   model
     .command("list")
     .description("List all models")
-    .action(async () => {
-      const result = await modelTools.modelNames.handler({ offset: 0, limit: 10000 });
+    .option("--offset <n>", "Starting position", "0")
+    .option("--limit <n>", "Maximum models to return", "1000")
+    .action(async (options: { offset: string; limit: string }) => {
+      const result = await modelTools.modelNames.handler({
+        offset: parseInt(options.offset, 10),
+        limit: parseInt(options.limit, 10),
+      });
       console.log(JSON.stringify(result, null, 2));
     });
 
