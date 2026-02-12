@@ -5,6 +5,13 @@
 
 * improve error messages with actionable guidance ([a096f86](https://github.com/briansunter/mankey/commit/a096f862abea796e59ff7cddcf9a34de345ccadb))
 
+## [1.3.0](https://github.com/briansunter/mankey/compare/mankey-v1.2.0...mankey-v1.3.0) (2026-02-12)
+
+
+### Features
+
+* add pagination to all large-result tools and CLI commands ([cb53df4](https://github.com/briansunter/mankey/commit/cb53df4415d1e15c73ec1a114cc0bc62f2b17c95))
+
 ## [1.2.0](https://github.com/briansunter/mankey/compare/mankey-v1.1.4...mankey-v1.2.0) (2026-02-12)
 
 
