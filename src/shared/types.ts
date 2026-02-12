@@ -1,0 +1,138 @@
+import type { z } from "zod";
+
+// Tool definition helper
+export interface ToolDef {
+  description: string;
+  schema: z.ZodTypeAny;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: (args: any) => Promise<unknown>;
+}
+
+// Type definitions for Anki-Connect responses
+export type AnkiConnectResponses = {
+  deckNames: string[];
+  deckNamesAndIds: Record<string, number>;
+  getDeckStats: Record<string, { new_count: number; learn_count: number; review_count: number; total_in_deck: number }>;
+  getDeckConfig: Record<string, unknown>;
+  createDeck: number;
+  deleteDecks: true;
+  findNotes: number[];
+  findCards: number[];
+  addNote: number;
+  addNotes: (number | null)[];
+  updateNote: true;
+  deleteNotes: true;
+  notesInfo: Array<{
+    noteId: number;
+    modelName: string;
+    tags: string[];
+    fields: Record<string, { value: string; order: number }>;
+    cards: number[];
+  }>;
+  cardsInfo: Array<{
+    cardId: number;
+    queue: number;
+    interval: number;
+    due: number;
+    reps: number;
+    factor: number;
+    fields?: Record<string, { value: string }>;
+  }>;
+  getTags: string[];
+  addTags: true;
+  removeTags: true;
+  suspend: true;
+  unsuspend: true;
+  getEaseFactors: number[];
+  setEaseFactors: true;
+  modelNames: string[];
+  modelFieldNames: string[];
+  modelNamesAndIds: Record<string, number>;
+  createModel: Record<string, unknown>;
+  getNumCardsReviewedToday: number;
+  getNumCardsReviewedByDay: Record<string, number>;
+  getCollectionStatsHTML: string;
+  storeMediaFile: string;
+  retrieveMediaFile: string | false;
+  getMediaFilesNames: string[];
+  deleteMediaFile: true;
+  sync: true;
+  getProfiles: string[];
+  loadProfile: true;
+  exportPackage: true;
+  importPackage: true;
+  guiBrowse: number[];
+  guiAddCards: number | null;
+  guiCurrentCard: Record<string, unknown> | null;
+  guiAnswerCard: true;
+  guiDeckOverview: true;
+  guiExitAnki: true;
+  canAddNotes: boolean[];
+  areSuspended: boolean[];
+  areDue: boolean[];
+  getIntervals: number[];
+  cardsToNotes: number[];
+  cardsModTime: number[];
+  answerCards: boolean[];
+  forgetCards: true;
+  relearnCards: true;
+  setSpecificValueOfCard: true;
+  getDecks: string[];
+  changeDeck: true;
+  saveDeckConfig: true;
+  setDeckConfigId: true;
+  cloneDeckConfigId: number;
+  removeDeckConfigId: true;
+  modelFieldsOnTemplates: Record<string, string[]>;
+  modelTemplates: Record<string, { Front: string; Back: string }>;
+  modelStyling: { css: string };
+  updateModelTemplates: Record<string, unknown>;
+  updateModelStyling: true;
+  updateNoteFields: true;
+  getNoteTags: string[];
+  clearUnusedTags: true;
+  replaceTags: true;
+  replaceTagsInAllNotes: true;
+  removeEmptyNotes: number;
+  notesModTime: number[];
+  cardReviews: Array<{
+    reviewTime: number;
+    cardID: number;
+    ease: number;
+    interval: number;
+    lastInterval: number;
+    factor: number;
+    reviewDuration: number;
+  }>;
+  getLatestReviewID: number | null;
+  getReviewsOfCards: Array<{
+    reviewTime: number;
+    cardID: number;
+    ease: number;
+    interval: number;
+    lastInterval: number;
+    factor: number;
+    reviewDuration: number;
+  }>;
+  guiSelectedNotes: number[];
+  guiSelectCard: true;
+  guiEditNote: Record<string, unknown> | null;
+  guiStartCardTimer: true;
+  guiShowQuestion: true;
+  guiShowAnswer: true;
+  guiUndo: boolean;
+  guiDeckBrowser: true;
+  guiDeckReview: string;
+  guiCheckDatabase: string;
+  guiImportFile: Record<string, unknown> | null;
+  getMediaDirPath: string;
+  version: number;
+  requestPermission: { permission: string; version: number };
+  apiReflect: { scopes: string[]; actions: string[] };
+  reloadCollection: true;
+  multi: unknown[];
+  getActiveProfile: string;
+  setDueDate: true;
+  suspended: boolean;
+  getDueCardsDetailed: unknown;
+};
