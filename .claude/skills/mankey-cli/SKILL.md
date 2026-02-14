@@ -10,20 +10,19 @@ description: >
 
 # Mankey CLI & MCP Tool Reference
 
-Mankey is an MCP server and CLI for managing Anki via Anki-Connect. All commands
-use `npx -y mankey` or the local `bun bin/mankey.ts`.
+Mankey is an MCP server and CLI for managing Anki via Anki-Connect. Works with Node.js (npx) or Bun.
 
 ## Quick Start
 
 ```bash
 # Start MCP server (default)
-npx -y mankey
+npx mankey
 
 # CLI commands
-npx -y mankey tools                        # List all tools
-npx -y mankey deck list                    # List decks
-npx -y mankey note add --deck Default --model Basic --front "Q" --back "A"
-npx -y mankey run <toolName> '<json>'      # Run any tool by name
+npx mankey tools                        # List all tools
+npx mankey deck list                    # List decks
+npx mankey note add --deck Default --model Basic --front "Q" --back "A"
+npx mankey run <toolName> '<json>'      # Run any tool by name
 ```
 
 Global option: `--url <url>` overrides Anki-Connect URL (default: `http://127.0.0.1:8765`, env: `ANKI_CONNECT_URL`).
@@ -80,10 +79,10 @@ Global option: `--url <url>` overrides Anki-Connect URL (default: `http://127.0.
 ### Generic Runner
 
 ```bash
-npx -y mankey run <toolName> '<jsonArgs>'
+npx mankey run <toolName> '<jsonArgs>'
 # Example:
-npx -y mankey run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
-npx -y mankey run findCards '{"query":"deck:Default is:due","limit":20}'
+npx mankey run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
+npx mankey run findCards '{"query":"deck:Default is:due","limit":20}'
 ```
 
 Any of the 96 tools below can be called via `run`. Arguments are validated with Zod before execution.

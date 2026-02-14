@@ -1,9 +1,8 @@
-# Source files (src/ and bin/ are shipped now)
+# Test and doc files
 tests/
 docs/
 screenshots/
 scripts/
-dist/
 
 # Config files
 .github/

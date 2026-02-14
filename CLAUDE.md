@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mankey** is an MCP (Model Context Protocol) server that connects AI assistants to Anki via Anki-Connect. It provides 45 comprehensive tools for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows.
+**Mankey** is an MCP server and CLI for Anki integration via Anki-Connect. It provides 96 tools across 8 categories for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows. Ships compiled JS via npm (`npx mankey`), uses Bun for development.
 
 ## Runtime & Commands
 
@@ -12,24 +12,31 @@ Use **Bun** (not Node.js) for all operations:
 
 ```bash
 # Development
-bun run src/index.ts              # Start MCP server
-bun --watch src/index.ts          # Development with watch mode
-bun run build                     # Build to dist/
+bun bin/mankey.ts mcp             # Start MCP server (Bun, fast)
+bun run dev                       # Watch mode MCP server
+bun run build                     # Compile to dist/ (tsc)
 bun run typecheck                 # Type checking only
+
+# CLI (development)
+bun bin/mankey.ts deck list       # Use Bun entry point
+bun bin/mankey.ts tools           # List all 96 tools
+bun bin/mankey.ts run version     # Run any tool
+
+# CLI (published, Node.js)
+npx mankey deck list              # Uses compiled dist/main.js
+npx mankey tools
 
 # Testing
 bun test                          # Run all tests
 bun test tests/test-NAME.test.ts  # Run specific test file
 bun test --watch                  # Watch mode
 bun test:e2e                      # All E2E tests
-bun test:e2e:basic                # Just connectivity tests
-bun test:e2e:tags                 # Just tag handling tests
 
 # Code Quality
-bun run lint                      # Run ESLint
+bun run lint                      # Run Biome linter
 bun run lint:fix                  # Auto-fix linting issues
 
-# Publishing (automated via semantic-release)
+# Publishing (automated via release-please)
 git commit -m "fix: description"  # Triggers patch release
 git commit -m "feat: description" # Triggers minor release
 git push                          # GitHub Actions publishes to npm
@@ -39,33 +46,44 @@ git push                          # GitHub Actions publishes to npm
 
 ### Core Components
 
-**src/index.ts** (~2000 lines) - Single-file MCP server containing:
+```
+bin/mankey.ts              # Bun development entry point (#!/usr/bin/env bun)
+src/
+  main.ts                  # CLI entry point → compiles to dist/main.js (#!/usr/bin/env node)
+  index.ts                 # MCP-only entry point (backward compat)
+  shared/
+    config.ts              # ANKI_CONNECT_URL, VERSION, DEBUG, debug()
+    anki-connect.ts        # ankiConnect() + AnkiConnectError
+    normalize.ts           # normalizeTags(), normalizeFields(), _encodeBase64()
+    schema.ts              # zodToJsonSchema() (bug-sensitive, single while loop)
+    types.ts               # ToolDef interface, AnkiConnectResponses
+  tools/
+    index.ts               # Aggregates all 96 tools from category files
+    decks.ts (6)           # deckNames, createDeck, getDeckStats, etc.
+    notes.ts (16)          # addNote, findNotes, notesInfo, updateNote, etc.
+    cards.ts (19)          # findCards, getNextCards, cardsInfo, answerCards, etc.
+    models.ts (9)          # modelNames, createModel, modelFieldNames, etc.
+    media.ts (5)           # storeMediaFile, retrieveMediaFile, etc.
+    stats.ts (7)           # getNumCardsReviewedToday, getDueCardsDetailed, etc.
+    gui.ts (17)            # guiBrowse, guiAddCards, guiDeckReview, etc.
+    system.ts (17)         # sync, exportPackage, multi, setDueDate, etc.
+  cli/
+    index.ts               # createProgram() factory with Commander.js
+    run.ts                 # Generic: mankey run <tool> [json]
+    tools-list.ts          # mankey tools [--category X] [--json]
+    decks.ts, notes.ts, cards.ts, models.ts, stats.ts  # Category subcommands
+  mcp/
+    server.ts              # createServer() factory
+    start.ts               # startMcpServer() with stdio transport
+```
 
-1. **Anki-Connect Client** (lines 1-200)
-   - `ankiConnect()` - HTTP client for Anki-Connect API
-   - `normalizeTags()` - Handles tags as arrays, strings, or JSON
-   - `normalizeFields()` - Handles fields as objects or JSON strings
-   - `normalizeIds()` - Converts between string/number IDs
+**Key design**: Tool handlers throw `AnkiConnectError` (not McpError). The MCP layer catches and wraps. CLI layer catches and prints.
 
-2. **zodToJsonSchema Converter** (lines 228-344)
-   - Converts Zod schemas to JSON Schema for MCP clients
-   - **CRITICAL**: Uses single while loop to unwrap `ZodOptional` and `ZodDefault` wrappers
-   - Must handle `.optional().default()` chains correctly (see tests/test-boolean-default-schema.test.ts)
-   - Bug history: Separate loops caused boolean→string type conversion (v1.1.2 fix)
-
-3. **Tool Definitions** (lines 346-1800)
-   - 45 tools organized by category: Decks, Notes, Cards, Models, Media, Stats
-   - Each tool has: `description`, `schema` (Zod), `handler` (async function)
-   - Smart features:
-     - **Auto-batching**: Operations >100 items split automatically (e.g., `notesInfo`, `cardsInfo`)
-     - **Pagination**: `findCards`, `findNotes`, `deckNames`, etc. support offset/limit
-     - **Queue priority**: `getNextCards` respects Learning → Review → New order
-     - **Smart normalization**: Tags/IDs work in any format
-
-4. **MCP Server Setup** (lines 1800-2000)
-   - Registers all tools with MCP SDK
-   - Handles `tools/list` and `tools/call` requests
-   - stdio transport for communication
+Each tool has: `description`, `schema` (Zod), `handler` (async function). Smart features:
+- **Auto-batching**: Operations >100 items split automatically
+- **Pagination**: `findCards`, `findNotes`, `deckNames`, etc. support offset/limit
+- **Queue priority**: `getNextCards` respects Learning > Review > New order
+- **Smart normalization**: Tags/IDs work in any format
 
 ### Key Architectural Patterns
 
@@ -240,7 +258,7 @@ Anki uses space-separated tags internally, but MCP tools accept arrays:
 
 ### Adding a New Tool
 
-1. Define in `src/index.ts` tool definitions section:
+1. Add to the appropriate category file in `src/tools/`:
 ```typescript
 toolName: {
   description: "Clear description for AI",
@@ -248,25 +266,22 @@ toolName: {
     param: z.string().describe("What this param does"),
   }),
   handler: async (args) => {
-    // Normalize inputs if needed
     const normalized = normalizeTags(args.tags);
-
-    // Call Anki-Connect
     return ankiConnect("ankiAction", args);
   },
 }
 ```
 
-2. Add to `AnkiConnectResponses` type if needed
+2. Add to `AnkiConnectResponses` type in `src/shared/types.ts` if needed
 
 3. Write tests in `tests/test-NAME.test.ts`
 
-4. Update tool count in README.md
+4. Optionally add a CLI subcommand in `src/cli/`
 
 ### Fixing a Bug
 
 1. Write failing test first in appropriate test file
-2. Fix in `src/index.ts`
+2. Fix in the relevant `src/` module
 3. Verify all tests pass: `bun test`
 4. Document in `docs/` if significant
 5. Commit with `fix:` prefix
@@ -303,12 +318,19 @@ DEBUG=true                              # Enable debug logging to stderr
 
 **Runtime**:
 - `@modelcontextprotocol/sdk` - MCP server framework
+- `commander` - CLI framework
 - `zod` - Schema validation and type inference
 
 **Development**:
-- `typescript` - Type checking
-- `eslint` - Linting
-- `semantic-release` - Automated publishing
-- `husky` - Git hooks for commitlint
+- `typescript` - Type checking and compilation
+- `@biomejs/biome` - Linting and formatting
 
-No frontend dependencies - this is a CLI tool that runs as MCP server.
+No frontend dependencies - this is a CLI tool and MCP server.
+
+## npm Packaging
+
+- `bin/mankey.ts` - Bun-only entry (development)
+- `dist/main.js` - Compiled Node.js entry (`#!/usr/bin/env node`) - this is what `npx mankey` runs
+- `dist/index.js` - MCP-only entry for programmatic use
+- `prepublishOnly` runs `tsc && chmod +x dist/main.js`
+- Files shipped: `dist/`, `bin/`, `src/`, `README.md`, `LICENSE`
