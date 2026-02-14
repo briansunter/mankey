@@ -5,6 +5,13 @@
 
 * improve error messages with actionable guidance ([a096f86](https://github.com/briansunter/mankey/commit/a096f862abea796e59ff7cddcf9a34de345ccadb))
 
+## [1.4.2](https://github.com/briansunter/mankey/compare/mankey-v1.4.1...mankey-v1.4.2) (2026-02-14)
+
+
+### Bug Fixes
+
+* add explicit build step to CI and remove npm dependency from prepublishOnly ([7a32d37](https://github.com/briansunter/mankey/commit/7a32d37e471e194cf42debb3c921b2440a54cfef))
+
 ## [1.4.1](https://github.com/briansunter/mankey/compare/mankey-v1.4.0...mankey-v1.4.1) (2026-02-14)
 
 
