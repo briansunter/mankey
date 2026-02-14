@@ -5,6 +5,13 @@
 
 * improve error messages with actionable guidance ([a096f86](https://github.com/briansunter/mankey/commit/a096f862abea796e59ff7cddcf9a34de345ccadb))
 
+## [1.4.1](https://github.com/briansunter/mankey/compare/mankey-v1.4.0...mankey-v1.4.1) (2026-02-14)
+
+
+### Bug Fixes
+
+* read CLI version from package.json instead of hardcoding ([c6792bb](https://github.com/briansunter/mankey/commit/c6792bbe0c78f767f1ed9188c8bab03a176ac8f8))
+
 ## [1.4.0](https://github.com/briansunter/mankey/compare/mankey-v1.3.0...mankey-v1.4.0) (2026-02-14)
 
 
