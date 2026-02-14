@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { setAnkiConnectUrl } from "../shared/config.js";
 import { registerCardCommands } from "./cards.js";
@@ -8,13 +9,16 @@ import { registerRunCommand } from "./run.js";
 import { registerStatsCommands } from "./stats.js";
 import { registerToolsCommand } from "./tools-list.js";
 
+const require = createRequire(import.meta.url);
+const { version } = require("../../package.json");
+
 export function createProgram(): Command {
   const program = new Command();
 
   program
     .name("mankey")
     .description("MCP server and CLI for Anki integration via Anki-Connect")
-    .version("1.3.0")
+    .version(version)
     .option("--url <url>", "Anki-Connect server URL (env: ANKI_CONNECT_URL)")
     .hook("preAction", (thisCommand) => {
       const opts = thisCommand.opts();
