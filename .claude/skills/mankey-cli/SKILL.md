@@ -12,20 +12,49 @@ description: >
 
 Mankey is an MCP server and CLI for managing Anki via Anki-Connect. Works with Node.js (npx) or Bun.
 
-## Quick Start
+## Prerequisites
+
+1. **[Anki Desktop](https://apps.ankiweb.net/)** must be running
+2. **Anki-Connect add-on** must be installed: Anki > Tools > Add-ons > Get Add-ons > Code: `2055492159` > Restart Anki
+
+## Setup
+
+### MCP Server (Claude Desktop / Claude Code)
+
+Add to your MCP config (`claude_desktop_config.json` or `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "anki": {
+      "command": "npx",
+      "args": ["mankey"]
+    }
+  }
+}
+```
+
+### CLI
 
 ```bash
-# Start MCP server (default)
-npx mankey
-
-# CLI commands
-npx mankey tools                        # List all tools
 npx mankey deck list                    # List decks
+npx mankey tools                        # List all 96 tools
 npx mankey note add --deck Default --model Basic --front "Q" --back "A"
 npx mankey run <toolName> '<json>'      # Run any tool by name
 ```
 
-Global option: `--url <url>` overrides Anki-Connect URL (default: `http://127.0.0.1:8765`, env: `ANKI_CONNECT_URL`).
+### Configuration
+
+| Option | Description |
+|--------|-------------|
+| `--url <url>` | Anki-Connect server URL |
+| `ANKI_CONNECT_URL` | Environment variable (default: `http://127.0.0.1:8765`) |
+
+### Troubleshooting
+
+- **Cannot connect**: Ensure Anki is running with Anki-Connect installed
+- **Permission dialog**: Click "Yes" on first Anki-Connect connection
+- **macOS background**: Run `defaults write net.ankiweb.dtop NSAppSleepDisabled -bool true` if Anki sleeps
 
 ## CLI Subcommands
 
