@@ -5,6 +5,13 @@
 
 * improve error messages with actionable guidance ([a096f86](https://github.com/briansunter/mankey/commit/a096f862abea796e59ff7cddcf9a34de345ccadb))
 
+## [1.4.0](https://github.com/briansunter/mankey/compare/mankey-v1.3.0...mankey-v1.4.0) (2026-02-14)
+
+
+### Features
+
+* compile to JS for npx compatibility, remove Bun requirement for end users ([228c5c3](https://github.com/briansunter/mankey/commit/228c5c3a27854773894ed4c7e86770f5cd0f6f78))
+
 ## [1.3.0](https://github.com/briansunter/mankey/compare/mankey-v1.2.0...mankey-v1.3.0) (2026-02-12)
 
 
