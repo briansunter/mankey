@@ -235,6 +235,143 @@ For full parameter schemas, types, and defaults, see `references/tools-by-catego
 - **cloneDeckConfigId** - Clone config (`name`, `cloneFrom`)
 - **removeDeckConfigId** - Delete config (`configId`)
 
+## Common Workflows
+
+### Check learning progress and mastery
+
+```bash
+# Deck overview: new/learning/review/total counts
+npx mankey deck stats "Japanese::JLPT N5"
+
+# Today's study stats
+npx mankey stats today
+
+# Due cards with queue breakdown (learning vs review vs new)
+npx mankey stats due --deck "Japanese::JLPT N5"
+
+# Find well-known cards (high interval = strong retention)
+npx mankey run findCards '{"query":"deck:Default prop:ivl>30"}'
+
+# Get full learning data for specific cards (interval, ease, reps, lapses)
+npx mankey card info <cardId1> <cardId2>
+# Returns: interval (days until review), factor (ease multiplier),
+#   reps (successful reviews), lapses (times forgotten),
+#   queue (0=new, 1=learning, 2=review, 3=relearning),
+#   type (0=new, 1=learning, 2=review, 3=relearn)
+```
+
+### Find struggling cards
+
+```bash
+# Cards failed many times (high lapse count)
+npx mankey run findCards '{"query":"deck:Default prop:lapses>5"}'
+
+# Cards with low ease (difficulty multiplier, 2500 = default)
+npx mankey run findCards '{"query":"deck:Default prop:ease<2.0"}'
+
+# Cards currently in relearning (recently forgotten)
+npx mankey run findCards '{"query":"deck:Default is:learn -is:new"}'
+
+# Get ease factors for specific cards
+npx mankey run getEaseFactors '{"cards":[123,456]}'
+```
+
+### Create cards from content
+
+```bash
+# Single card
+npx mankey note add --deck "Japanese" --model Basic --front "日本語" --back "Japanese language" --tags japanese,vocabulary
+
+# Bulk create via generic runner
+npx mankey run addNotes '{"notes":[
+  {"deckName":"Japanese","modelName":"Basic","fields":{"Front":"猫","Back":"cat"},"tags":["japanese"]},
+  {"deckName":"Japanese","modelName":"Basic","fields":{"Front":"犬","Back":"dog"},"tags":["japanese"]}
+]}'
+
+# Cloze deletion
+npx mankey run addNote '{"deckName":"Science","modelName":"Cloze","fields":{"Text":"The {{c1::mitochondria}} is the powerhouse of the cell"}}'
+
+# Check what fields a model needs before creating
+npx mankey model fields "Basic (and reversed card)"
+```
+
+### Review cards programmatically
+
+```bash
+# Get next due cards in review order (Learning > Review > New)
+npx mankey card next --deck Default --limit 5
+
+# Answer cards: 1=Again 2=Hard 3=Good 4=Easy
+npx mankey card answer <cardId> 3
+
+# Batch answer multiple cards
+npx mankey run answerCards '{"answers":[
+  {"cardId":123,"ease":3},
+  {"cardId":456,"ease":4}
+]}'
+```
+
+### Manage tags and organize
+
+```bash
+# Find all cards with a tag
+npx mankey note find "tag:japanese"
+
+# Add tags to notes
+npx mankey run addTags '{"notes":[123,456],"tags":"vocab important"}'
+
+# Replace a tag across entire collection
+npx mankey run replaceTagsInAllNotes '{"tagToReplace":"old-tag","replaceWithTag":"new-tag"}'
+
+# Clean up unused tags
+npx mankey run clearUnusedTags '{}'
+
+# Move cards between decks
+npx mankey run changeDeck '{"cards":[123,456],"deck":"Japanese::Advanced"}'
+```
+
+### Bulk operations and search
+
+```bash
+# Search with Anki query syntax
+npx mankey card find "deck:Japanese is:due" --limit 50
+npx mankey note find "tag:vocab added:7"        # Added in last 7 days
+npx mankey card find "prop:ivl>90 deck:Default"  # Well-known cards
+
+# Suspend/unsuspend cards
+npx mankey card suspend 123 456 789
+npx mankey card unsuspend 123 456 789
+
+# Reset cards to new state (clear scheduling)
+npx mankey run forgetCards '{"cards":[123,456]}'
+
+# Reschedule cards
+npx mankey run setDueDate '{"cards":[123,456],"days":"0"}'  # Due today
+npx mankey run setDueDate '{"cards":[123,456],"days":"7"}'  # Due in 7 days
+```
+
+## Search Query Syntax
+
+| Query | Matches |
+|-------|---------|
+| `deck:Name` | Cards in deck (use quotes for `::`: `"deck:A::B"`) |
+| `tag:name` | Notes with tag |
+| `-tag:name` | Notes without tag |
+| `is:due` | Cards due for review |
+| `is:new` | New cards (never reviewed) |
+| `is:review` | Review cards (graduated from learning) |
+| `is:learn` | Cards in learning phase |
+| `is:suspended` | Suspended cards |
+| `prop:ivl>N` | Cards with interval > N days |
+| `prop:ease<N` | Cards with ease factor < N |
+| `prop:lapses>N` | Cards failed more than N times |
+| `prop:reps>N` | Cards reviewed more than N times |
+| `added:N` | Cards added in last N days |
+| `rated:N` | Cards rated in last N days |
+| `"field:value"` | Cards where field contains value |
+
+Combine queries with spaces (AND). Example: `deck:Japanese is:due prop:lapses>3`
+
 ## Key Patterns
 
 **Pagination**: Tools returning lists support `offset`/`limit`. Response includes `pagination: { total, offset, limit, hasMore, nextOffset }`.
@@ -242,5 +379,3 @@ For full parameter schemas, types, and defaults, see `references/tools-by-catego
 **Auto-batching**: `notesInfo` and `cardsInfo` auto-split requests >100 items.
 
 **Input flexibility**: IDs accept number/string/array. Tags accept array, space-separated string, or JSON string.
-
-**Search syntax**: `deck:Name`, `tag:name`, `is:due`, `is:new`, `is:suspended`, `"field:value"`, `-tag:exclude`. Combine with spaces (AND). Use quotes around deck names with `::`.
