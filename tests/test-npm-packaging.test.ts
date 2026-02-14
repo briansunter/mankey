@@ -62,7 +62,7 @@ test("npm packaging - package.json has correct scripts", () => {
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
   expect(pkg.scripts.build).toBe("tsc && chmod +x dist/main.js");
-  expect(pkg.scripts.prepublishOnly).toBe("npm run build");
+  expect(pkg.scripts.prepublishOnly).toBe("tsc && chmod +x dist/main.js");
 });
 
 test("npm packaging - shared modules exist", () => {
