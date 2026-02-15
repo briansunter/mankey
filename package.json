@@ -1,6 +1,6 @@
 {
   "name": "anki-ai",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "MCP server and CLI for Anki integration via Anki-Connect",
   "type": "module",
   "main": "dist/index.js",
