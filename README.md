@@ -3,6 +3,10 @@
 [![npm version](https://img.shields.io/npm/v/anki-ai)](https://www.npmjs.com/package/anki-ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+```bash
+npx skills add briansunter/anki-ai
+```
+
 MCP server and CLI for Anki integration via Anki-Connect. 96 tools across 8 categories for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows.
 
 ![Anki-AI](./screenshots/anki-ai.png)
