@@ -26,8 +26,8 @@ test("npm packaging - dist/index.js exists after build", () => {
   expect(() => accessSync(distPath, constants.F_OK)).not.toThrow();
 });
 
-test("npm packaging - bin/mankey.ts exists for bun development", () => {
-  const binPath = join(process.cwd(), "bin", "mankey.ts");
+test("npm packaging - bin/anki-ai.ts exists for bun development", () => {
+  const binPath = join(process.cwd(), "bin", "anki-ai.ts");
   expect(() => accessSync(binPath, constants.F_OK)).not.toThrow();
 });
 
@@ -40,10 +40,10 @@ test("npm packaging - package.json has required fields", () => {
   const pkgPath = join(process.cwd(), "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
-  expect(pkg.name).toBe("mankey");
+  expect(pkg.name).toBe("anki-ai");
   expect(pkg.main).toBe("dist/index.js");
   expect(pkg.types).toBe("dist/index.d.ts");
-  expect(pkg.bin).toEqual({ mankey: "dist/main.js" });
+  expect(pkg.bin).toEqual({ "anki-ai": "dist/main.js" });
 
   expect(pkg.publishConfig).toBeDefined();
   expect(pkg.publishConfig.access).toBe("public");
@@ -118,7 +118,7 @@ test("npm packaging - package.json repository field is correct", () => {
 
   expect(pkg.repository).toBeDefined();
   expect(pkg.repository.type).toBe("git");
-  expect(pkg.repository.url).toBe("https://github.com/briansunter/mankey.git");
+  expect(pkg.repository.url).toBe("https://github.com/briansunter/anki-ai.git");
 });
 
 test("npm packaging - package.json has keywords including cli", () => {

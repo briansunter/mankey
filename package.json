@@ -1,12 +1,12 @@
 {
-  "name": "mankey",
+  "name": "anki-ai",
   "version": "1.4.2",
   "description": "MCP server and CLI for Anki integration via Anki-Connect",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "mankey": "dist/main.js"
+    "anki-ai": "dist/main.js"
   },
   "files": [
     "dist",
@@ -21,13 +21,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/briansunter/mankey.git"
+    "url": "https://github.com/briansunter/anki-ai.git"
   },
   "scripts": {
-    "start": "bun bin/mankey.ts mcp",
+    "start": "bun bin/anki-ai.ts mcp",
     "build": "tsc && chmod +x dist/main.js",
     "prepublishOnly": "tsc && chmod +x dist/main.js",
-    "dev": "bun --watch bin/mankey.ts mcp",
+    "dev": "bun --watch bin/anki-ai.ts mcp",
     "test": "bun test",
     "test:e2e": "bun test tests/*.test.ts",
     "test:e2e:all": "bun tests/run-tests.ts",

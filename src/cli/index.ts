@@ -16,7 +16,7 @@ export function createProgram(): Command {
   const program = new Command();
 
   program
-    .name("mankey")
+    .name("anki-ai")
     .description("MCP server and CLI for Anki integration via Anki-Connect")
     .version(version)
     .option("--url <url>", "Anki-Connect server URL (env: ANKI_CONNECT_URL)")

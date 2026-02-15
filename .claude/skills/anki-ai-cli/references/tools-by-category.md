@@ -1,6 +1,6 @@
-# Mankey Tools - Complete Parameter Reference
+# Anki-AI Tools - Complete Parameter Reference
 
-All tools are accessible via CLI (`npx -y mankey run <tool> '<json>'`) or MCP server.
+All tools are accessible via CLI (`npx -y anki-ai run <tool> '<json>'`) or MCP server.
 
 ---
 

@@ -1,6 +1,6 @@
-# Mankey Tests
+# Anki-AI Tests
 
-This directory contains the test suite for the Mankey MCP server.
+This directory contains the test suite for the Anki-AI MCP server.
 
 ## Mock Anki-Connect Server
 

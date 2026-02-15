@@ -1,16 +1,16 @@
 ---
-name: mankey-cli
+name: anki-ai-cli
 description: >
-  Comprehensive reference for the Mankey Anki CLI and MCP server. Use when
-  working with Anki flashcards via the mankey command, creating notes, managing
+  Comprehensive reference for the Anki-AI CLI and MCP server. Use when
+  working with Anki flashcards via the anki-ai command, creating notes, managing
   decks, reviewing cards, querying collection data, or building MCP tool
   integrations. Covers all 96 tools across 8 categories (deck, note, card,
   model, media, stats, gui, system) with full parameter details.
 ---
 
-# Mankey CLI & MCP Tool Reference
+# Anki-AI CLI & MCP Tool Reference
 
-Mankey is an MCP server and CLI for managing Anki via Anki-Connect. Works with Node.js (npx) or Bun.
+Anki-AI is an MCP server and CLI for managing Anki via Anki-Connect. Works with Node.js (npx) or Bun.
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ Add to your MCP config (`claude_desktop_config.json` or `.mcp.json`):
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["mankey"]
+      "args": ["anki-ai"]
     }
   }
 }
@@ -37,10 +37,10 @@ Add to your MCP config (`claude_desktop_config.json` or `.mcp.json`):
 ### CLI
 
 ```bash
-npx mankey deck list                    # List decks
-npx mankey tools                        # List all 96 tools
-npx mankey note add --deck Default --model Basic --front "Q" --back "A"
-npx mankey run <toolName> '<json>'      # Run any tool by name
+npx anki-ai deck list                    # List decks
+npx anki-ai tools                        # List all 96 tools
+npx anki-ai note add --deck Default --model Basic --front "Q" --back "A"
+npx anki-ai run <toolName> '<json>'      # Run any tool by name
 ```
 
 ### Configuration
@@ -108,10 +108,10 @@ npx mankey run <toolName> '<json>'      # Run any tool by name
 ### Generic Runner
 
 ```bash
-npx mankey run <toolName> '<jsonArgs>'
+npx anki-ai run <toolName> '<jsonArgs>'
 # Example:
-npx mankey run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
-npx mankey run findCards '{"query":"deck:Default is:due","limit":20}'
+npx anki-ai run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
+npx anki-ai run findCards '{"query":"deck:Default is:due","limit":20}'
 ```
 
 Any of the 96 tools below can be called via `run`. Arguments are validated with Zod before execution.
@@ -241,19 +241,19 @@ For full parameter schemas, types, and defaults, see `references/tools-by-catego
 
 ```bash
 # Deck overview: new/learning/review/total counts
-npx mankey deck stats "Japanese::JLPT N5"
+npx anki-ai deck stats "Japanese::JLPT N5"
 
 # Today's study stats
-npx mankey stats today
+npx anki-ai stats today
 
 # Due cards with queue breakdown (learning vs review vs new)
-npx mankey stats due --deck "Japanese::JLPT N5"
+npx anki-ai stats due --deck "Japanese::JLPT N5"
 
 # Find well-known cards (high interval = strong retention)
-npx mankey run findCards '{"query":"deck:Default prop:ivl>30"}'
+npx anki-ai run findCards '{"query":"deck:Default prop:ivl>30"}'
 
 # Get full learning data for specific cards (interval, ease, reps, lapses)
-npx mankey card info <cardId1> <cardId2>
+npx anki-ai card info <cardId1> <cardId2>
 # Returns: interval (days until review), factor (ease multiplier),
 #   reps (successful reviews), lapses (times forgotten),
 #   queue (0=new, 1=learning, 2=review, 3=relearning),
@@ -264,48 +264,48 @@ npx mankey card info <cardId1> <cardId2>
 
 ```bash
 # Cards failed many times (high lapse count)
-npx mankey run findCards '{"query":"deck:Default prop:lapses>5"}'
+npx anki-ai run findCards '{"query":"deck:Default prop:lapses>5"}'
 
 # Cards with low ease (difficulty multiplier, 2500 = default)
-npx mankey run findCards '{"query":"deck:Default prop:ease<2.0"}'
+npx anki-ai run findCards '{"query":"deck:Default prop:ease<2.0"}'
 
 # Cards currently in relearning (recently forgotten)
-npx mankey run findCards '{"query":"deck:Default is:learn -is:new"}'
+npx anki-ai run findCards '{"query":"deck:Default is:learn -is:new"}'
 
 # Get ease factors for specific cards
-npx mankey run getEaseFactors '{"cards":[123,456]}'
+npx anki-ai run getEaseFactors '{"cards":[123,456]}'
 ```
 
 ### Create cards from content
 
 ```bash
 # Single card
-npx mankey note add --deck "Japanese" --model Basic --front "日本語" --back "Japanese language" --tags japanese,vocabulary
+npx anki-ai note add --deck "Japanese" --model Basic --front "日本語" --back "Japanese language" --tags japanese,vocabulary
 
 # Bulk create via generic runner
-npx mankey run addNotes '{"notes":[
+npx anki-ai run addNotes '{"notes":[
   {"deckName":"Japanese","modelName":"Basic","fields":{"Front":"猫","Back":"cat"},"tags":["japanese"]},
   {"deckName":"Japanese","modelName":"Basic","fields":{"Front":"犬","Back":"dog"},"tags":["japanese"]}
 ]}'
 
 # Cloze deletion
-npx mankey run addNote '{"deckName":"Science","modelName":"Cloze","fields":{"Text":"The {{c1::mitochondria}} is the powerhouse of the cell"}}'
+npx anki-ai run addNote '{"deckName":"Science","modelName":"Cloze","fields":{"Text":"The {{c1::mitochondria}} is the powerhouse of the cell"}}'
 
 # Check what fields a model needs before creating
-npx mankey model fields "Basic (and reversed card)"
+npx anki-ai model fields "Basic (and reversed card)"
 ```
 
 ### Review cards programmatically
 
 ```bash
 # Get next due cards in review order (Learning > Review > New)
-npx mankey card next --deck Default --limit 5
+npx anki-ai card next --deck Default --limit 5
 
 # Answer cards: 1=Again 2=Hard 3=Good 4=Easy
-npx mankey card answer <cardId> 3
+npx anki-ai card answer <cardId> 3
 
 # Batch answer multiple cards
-npx mankey run answerCards '{"answers":[
+npx anki-ai run answerCards '{"answers":[
   {"cardId":123,"ease":3},
   {"cardId":456,"ease":4}
 ]}'
@@ -315,39 +315,39 @@ npx mankey run answerCards '{"answers":[
 
 ```bash
 # Find all cards with a tag
-npx mankey note find "tag:japanese"
+npx anki-ai note find "tag:japanese"
 
 # Add tags to notes
-npx mankey run addTags '{"notes":[123,456],"tags":"vocab important"}'
+npx anki-ai run addTags '{"notes":[123,456],"tags":"vocab important"}'
 
 # Replace a tag across entire collection
-npx mankey run replaceTagsInAllNotes '{"tagToReplace":"old-tag","replaceWithTag":"new-tag"}'
+npx anki-ai run replaceTagsInAllNotes '{"tagToReplace":"old-tag","replaceWithTag":"new-tag"}'
 
 # Clean up unused tags
-npx mankey run clearUnusedTags '{}'
+npx anki-ai run clearUnusedTags '{}'
 
 # Move cards between decks
-npx mankey run changeDeck '{"cards":[123,456],"deck":"Japanese::Advanced"}'
+npx anki-ai run changeDeck '{"cards":[123,456],"deck":"Japanese::Advanced"}'
 ```
 
 ### Bulk operations and search
 
 ```bash
 # Search with Anki query syntax
-npx mankey card find "deck:Japanese is:due" --limit 50
-npx mankey note find "tag:vocab added:7"        # Added in last 7 days
-npx mankey card find "prop:ivl>90 deck:Default"  # Well-known cards
+npx anki-ai card find "deck:Japanese is:due" --limit 50
+npx anki-ai note find "tag:vocab added:7"        # Added in last 7 days
+npx anki-ai card find "prop:ivl>90 deck:Default"  # Well-known cards
 
 # Suspend/unsuspend cards
-npx mankey card suspend 123 456 789
-npx mankey card unsuspend 123 456 789
+npx anki-ai card suspend 123 456 789
+npx anki-ai card unsuspend 123 456 789
 
 # Reset cards to new state (clear scheduling)
-npx mankey run forgetCards '{"cards":[123,456]}'
+npx anki-ai run forgetCards '{"cards":[123,456]}'
 
 # Reschedule cards
-npx mankey run setDueDate '{"cards":[123,456],"days":"0"}'  # Due today
-npx mankey run setDueDate '{"cards":[123,456],"days":"7"}'  # Due in 7 days
+npx anki-ai run setDueDate '{"cards":[123,456],"days":"0"}'  # Due today
+npx anki-ai run setDueDate '{"cards":[123,456],"days":"7"}'  # Due in 7 days
 ```
 
 ## Search Query Syntax

@@ -9,7 +9,7 @@ export function registerRunCommand(program: Command): void {
       const tool = tools[toolName];
       if (!tool) {
         console.error(`Error: Unknown tool "${toolName}"`);
-        console.error(`Run "mankey tools" to see available tools.`);
+        console.error(`Run "anki-ai tools" to see available tools.`);
         process.exit(1);
       }
 

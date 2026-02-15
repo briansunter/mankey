@@ -1,11 +1,11 @@
-# Mankey - Anki MCP Server & CLI
+# Anki-AI - Anki MCP Server & CLI
 
-[![npm version](https://img.shields.io/npm/v/mankey)](https://www.npmjs.com/package/mankey)
+[![npm version](https://img.shields.io/npm/v/anki-ai)](https://www.npmjs.com/package/anki-ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 MCP server and CLI for Anki integration via Anki-Connect. 96 tools across 8 categories for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows.
 
-![Mankey](./screenshots/mankey.png)
+![Anki-AI](./screenshots/anki-ai.png)
 
 ## Quick Start
 
@@ -64,7 +64,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["mankey"]
+      "args": ["anki-ai"]
     }
   }
 }
@@ -81,7 +81,7 @@ Create `.mcp.json` in your project root:
   "servers": {
     "anki": {
       "command": "npx",
-      "args": ["mankey"]
+      "args": ["anki-ai"]
     }
   }
 }
@@ -91,19 +91,19 @@ Create `.mcp.json` in your project root:
 
 ```bash
 # List all decks
-npx mankey deck list
+npx anki-ai deck list
 
 # Create a note
-npx mankey note add --deck Default --model Basic --front "Q" --back "A"
+npx anki-ai note add --deck Default --model Basic --front "Q" --back "A"
 
 # Search notes
-npx mankey note find "deck:Default"
+npx anki-ai note find "deck:Default"
 
 # Run any of the 96 tools directly
-npx mankey run findCards '{"query":"deck:Default is:due","limit":20}'
+npx anki-ai run findCards '{"query":"deck:Default is:due","limit":20}'
 
 # List all available tools
-npx mankey tools
+npx anki-ai tools
 ```
 
 ## Common Workflows
@@ -111,11 +111,11 @@ npx mankey tools
 ### Quick Card Creation
 ```bash
 # Create a vocabulary card
-npx mankey note add --deck "Japanese::Vocab" --model Basic \
+npx anki-ai note add --deck "Japanese::Vocab" --model Basic \
   --front "猫 (neko)" --back "cat" --tags japanese,N5
 
 # Create multiple cards in a deck
-npx mankey run addNotes '{"notes":[
+npx anki-ai run addNotes '{"notes":[
   {"deckName":"Spanish","modelName":"Basic","fields":{"Front":"Hola","Back":"Hello"},"tags":["spanish"]},
   {"deckName":"Spanish","modelName":"Basic","fields":{"Front":"Adiós","Back":"Goodbye"},"tags":["spanish"]}
 ]}'
@@ -124,25 +124,25 @@ npx mankey run addNotes '{"notes":[
 ### Review Cards
 ```bash
 # Get next 10 due cards in review order (Learning > Review > New)
-npx mankey card next --limit 10
+npx anki-ai card next --limit 10
 
 # Get due cards for a specific deck
-npx mankey card next --deck "Japanese::Vocab" --limit 5
+npx anki-ai card next --deck "Japanese::Vocab" --limit 5
 
 # Answer a card (1=Again, 2=Hard, 3=Good, 4=Easy)
-npx mankey card answer 123456789 3
+npx anki-ai card answer 123456789 3
 ```
 
 ### Check Progress
 ```bash
 # Today's review count
-npx mankey stats today
+npx anki-ai stats today
 
 # Due cards with breakdown by type
-npx mankey stats due --deck "Japanese"
+npx anki-ai stats due --deck "Japanese"
 
 # Deck statistics (new/learn/review/total)
-npx mankey deck stats "Japanese::Vocab"
+npx anki-ai deck stats "Japanese::Vocab"
 ```
 
 ## CLI Commands
@@ -194,9 +194,9 @@ npx mankey deck stats "Japanese::Vocab"
 Any of the 96 tools can be called directly:
 
 ```bash
-npx mankey run <toolName> '<jsonArgs>'
-npx mankey run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
-npx mankey run deckNames
+npx anki-ai run <toolName> '<jsonArgs>'
+npx anki-ai run addNote '{"deckName":"Default","modelName":"Basic","fields":{"Front":"Hello","Back":"World"}}'
+npx anki-ai run deckNames
 ```
 
 ## Tool Categories (96 tools)
@@ -212,7 +212,7 @@ npx mankey run deckNames
 | GUI | 17 | guiBrowse, guiAddCards, guiDeckReview |
 | System | 17 | sync, exportPackage, importPackage, multi |
 
-Run `npx mankey tools` for the full list, or `npx mankey tools --category deck` to filter.
+Run `npx anki-ai tools` for the full list, or `npx anki-ai tools --category deck` to filter.
 
 ## Key Features
 
@@ -247,7 +247,7 @@ Run `npx mankey tools` for the full list, or `npx mankey tools --category deck` 
    ```
 
 ### Permission dialog on first connection
-Anki-Connect shows a permission prompt when Mankey first connects. Click **Yes** to allow. If you clicked "No":
+Anki-Connect shows a permission prompt when Anki-AI first connects. Click **Yes** to allow. If you clicked "No":
 1. Go to **Tools → Add-ons → AnkiConnect → Config**
 2. Add your app to `corsOriginList`
 
@@ -266,8 +266,8 @@ Add the requesting app to `corsOriginList` in Anki-Connect config.
 ## Project Structure
 
 ```
-mankey/
-  bin/mankey.ts              # Bun development entry point
+anki-ai/
+  bin/anki-ai.ts              # Bun development entry point
   src/
     main.ts                  # CLI entry point (compiles to dist/main.js)
     index.ts                 # MCP-only entry point

@@ -1,12 +1,12 @@
-# Mankey CLI Workflow Examples
+# Anki-AI CLI Workflow Examples
 
-Common multi-step workflows using the Mankey CLI.
+Common multi-step workflows using the Anki-AI CLI.
 
 ## Creating Flashcards
 
 ### Single card (Basic model)
 ```bash
-npx -y mankey note add \
+npx -y anki-ai note add \
   --deck "Japanese::Vocabulary" \
   --model "Basic" \
   --front "食べる (たべる)" \
@@ -16,7 +16,7 @@ npx -y mankey note add \
 
 ### Single card via generic runner
 ```bash
-npx -y mankey run addNote '{
+npx -y anki-ai run addNote '{
   "deckName": "Japanese::Vocabulary",
   "modelName": "Basic",
   "fields": { "Front": "食べる", "Back": "to eat" },
@@ -26,7 +26,7 @@ npx -y mankey run addNote '{
 
 ### Bulk create cards
 ```bash
-npx -y mankey run addNotes '{
+npx -y anki-ai run addNotes '{
   "notes": [
     {
       "deckName": "Geography",
@@ -46,7 +46,7 @@ npx -y mankey run addNotes '{
 
 ### Cloze deletion card
 ```bash
-npx -y mankey run addNote '{
+npx -y anki-ai run addNote '{
   "deckName": "Science",
   "modelName": "Cloze",
   "fields": { "Text": "The {{c1::mitochondria}} is the powerhouse of the {{c2::cell}}" },
@@ -58,40 +58,40 @@ npx -y mankey run addNote '{
 
 ### Create nested deck structure
 ```bash
-npx -y mankey deck create "Languages::Japanese::JLPT N5"
-npx -y mankey deck create "Languages::Japanese::JLPT N4"
-npx -y mankey deck create "Languages::Japanese::JLPT N3"
+npx -y anki-ai deck create "Languages::Japanese::JLPT N5"
+npx -y anki-ai deck create "Languages::Japanese::JLPT N4"
+npx -y anki-ai deck create "Languages::Japanese::JLPT N3"
 ```
 
 ### Check study progress
 ```bash
-npx -y mankey deck stats "Languages::Japanese::JLPT N5" "Languages::Japanese::JLPT N4"
+npx -y anki-ai deck stats "Languages::Japanese::JLPT N5" "Languages::Japanese::JLPT N4"
 ```
 
 ### List all decks
 ```bash
-npx -y mankey deck list
+npx -y anki-ai deck list
 ```
 
 ## Reviewing Cards
 
 ### See what's due
 ```bash
-npx -y mankey stats due --deck "Japanese::Vocabulary"
+npx -y anki-ai stats due --deck "Japanese::Vocabulary"
 ```
 
 ### Get next cards in review order
 ```bash
-npx -y mankey card next --deck "Japanese::Vocabulary" --limit 5
+npx -y anki-ai card next --deck "Japanese::Vocabulary" --limit 5
 ```
 
 ### Answer cards programmatically
 ```bash
 # Answer a single card (ease: 1=Again, 2=Hard, 3=Good, 4=Easy)
-npx -y mankey card answer 1234567890 3
+npx -y anki-ai card answer 1234567890 3
 
 # Batch answer multiple cards
-npx -y mankey run answerCards '{
+npx -y anki-ai run answerCards '{
   "answers": [
     { "cardId": 1234567890, "ease": 3 },
     { "cardId": 1234567891, "ease": 4 },
@@ -104,45 +104,45 @@ npx -y mankey run answerCards '{
 
 ### Find notes by tag
 ```bash
-npx -y mankey note find "tag:japanese" --limit 20
+npx -y anki-ai note find "tag:japanese" --limit 20
 ```
 
 ### Find due cards in a deck
 ```bash
-npx -y mankey card find "deck:Default is:due" --limit 50
+npx -y anki-ai card find "deck:Default is:due" --limit 50
 ```
 
 ### Find suspended cards
 ```bash
-npx -y mankey card find "is:suspended" --limit 100
+npx -y anki-ai card find "is:suspended" --limit 100
 ```
 
 ### Find cards added recently
 ```bash
-npx -y mankey card find "added:7"  # last 7 days
+npx -y anki-ai card find "added:7"  # last 7 days
 ```
 
 ### Get full note info
 ```bash
-npx -y mankey note info 1234567890 1234567891
+npx -y anki-ai note info 1234567890 1234567891
 ```
 
 ## Updating Cards
 
 ### Update note content
 ```bash
-npx -y mankey note update 1234567890 \
+npx -y anki-ai note update 1234567890 \
   --fields '{"Front": "Updated question", "Back": "Updated answer"}'
 ```
 
 ### Replace tags
 ```bash
-npx -y mankey note update 1234567890 --tags "new-tag1,new-tag2"
+npx -y anki-ai note update 1234567890 --tags "new-tag1,new-tag2"
 ```
 
 ### Add tags to existing notes (preserves existing tags)
 ```bash
-npx -y mankey run addTags '{
+npx -y anki-ai run addTags '{
   "notes": [1234567890, 1234567891],
   "tags": "important review-again"
 }'
@@ -150,7 +150,7 @@ npx -y mankey run addTags '{
 
 ### Remove tags
 ```bash
-npx -y mankey run removeTags '{
+npx -y anki-ai run removeTags '{
   "notes": [1234567890],
   "tags": "old-tag deprecated"
 }'
@@ -158,7 +158,7 @@ npx -y mankey run removeTags '{
 
 ### Global tag rename
 ```bash
-npx -y mankey run replaceTagsInAllNotes '{
+npx -y anki-ai run replaceTagsInAllNotes '{
   "tagToReplace": "old-category",
   "replaceWithTag": "new-category"
 }'
@@ -168,13 +168,13 @@ npx -y mankey run replaceTagsInAllNotes '{
 
 ### Suspend/unsuspend cards
 ```bash
-npx -y mankey card suspend 1234567890 1234567891
-npx -y mankey card unsuspend 1234567890
+npx -y anki-ai card suspend 1234567890 1234567891
+npx -y anki-ai card unsuspend 1234567890
 ```
 
 ### Move cards between decks
 ```bash
-npx -y mankey run changeDeck '{
+npx -y anki-ai run changeDeck '{
   "cards": [1234567890, 1234567891],
   "deck": "Japanese::JLPT N4"
 }'
@@ -182,17 +182,17 @@ npx -y mankey run changeDeck '{
 
 ### Reset cards to new
 ```bash
-npx -y mankey run forgetCards '{"cards": [1234567890]}'
+npx -y anki-ai run forgetCards '{"cards": [1234567890]}'
 ```
 
 ### Set due date
 ```bash
-npx -y mankey run setDueDate '{
+npx -y anki-ai run setDueDate '{
   "cards": [1234567890],
   "days": "0"
 }'  # Due today
 
-npx -y mankey run setDueDate '{
+npx -y anki-ai run setDueDate '{
   "cards": [1234567890, 1234567891],
   "days": "3-7"
 }'  # Random 3-7 days from now
@@ -202,14 +202,14 @@ npx -y mankey run setDueDate '{
 
 ### List available models and their fields
 ```bash
-npx -y mankey model list
-npx -y mankey model fields "Basic"
-npx -y mankey model fields "Cloze"
+npx -y anki-ai model list
+npx -y anki-ai model fields "Basic"
+npx -y anki-ai model fields "Cloze"
 ```
 
 ### Create a custom model
 ```bash
-npx -y mankey model create \
+npx -y anki-ai model create \
   --name "Vocabulary" \
   --fields "Word,Reading,Meaning,Example" \
   --templates '[{
@@ -222,7 +222,7 @@ npx -y mankey model create \
 
 ### Update model styling
 ```bash
-npx -y mankey run updateModelStyling '{
+npx -y anki-ai run updateModelStyling '{
   "model": {
     "name": "Vocabulary",
     "css": ".word { font-size: 3em; color: #333; }"
@@ -234,7 +234,7 @@ npx -y mankey run updateModelStyling '{
 
 ### Store media from URL
 ```bash
-npx -y mankey run storeMediaFile '{
+npx -y anki-ai run storeMediaFile '{
   "filename": "pronunciation.mp3",
   "url": "https://example.com/audio/word.mp3"
 }'
@@ -242,7 +242,7 @@ npx -y mankey run storeMediaFile '{
 
 ### Store media from local file
 ```bash
-npx -y mankey run storeMediaFile '{
+npx -y anki-ai run storeMediaFile '{
   "filename": "diagram.png",
   "path": "/Users/me/images/diagram.png"
 }'
@@ -250,62 +250,62 @@ npx -y mankey run storeMediaFile '{
 
 ### List media files
 ```bash
-npx -y mankey run getMediaFilesNames '{"pattern": "*.mp3"}'
+npx -y anki-ai run getMediaFilesNames '{"pattern": "*.mp3"}'
 ```
 
 ## Statistics and Review Data
 
 ### Today's progress
 ```bash
-npx -y mankey stats today
+npx -y anki-ai stats today
 ```
 
 ### Due card breakdown
 ```bash
-npx -y mankey stats due
-npx -y mankey stats due --deck "Japanese::Vocabulary"
+npx -y anki-ai stats due
+npx -y anki-ai stats due --deck "Japanese::Vocabulary"
 ```
 
 ### Full collection stats
 ```bash
-npx -y mankey stats collection
+npx -y anki-ai stats collection
 ```
 
 ### Review history for cards
 ```bash
-npx -y mankey run getReviewsOfCards '{"cards": [1234567890]}'
+npx -y anki-ai run getReviewsOfCards '{"cards": [1234567890]}'
 ```
 
 ## System Operations
 
 ### Sync with AnkiWeb
 ```bash
-npx -y mankey run sync
+npx -y anki-ai run sync
 ```
 
 ### Export/import decks
 ```bash
-npx -y mankey run exportPackage '{
+npx -y anki-ai run exportPackage '{
   "deck": "Japanese::Vocabulary",
   "path": "/Users/me/backup/japanese-vocab.apkg",
   "includeSched": true
 }'
 
-npx -y mankey run importPackage '{
+npx -y anki-ai run importPackage '{
   "path": "/Users/me/downloads/shared-deck.apkg"
 }'
 ```
 
 ### Profile management
 ```bash
-npx -y mankey run getActiveProfile
-npx -y mankey run getProfiles
-npx -y mankey run loadProfile '{"name": "Study"}'
+npx -y anki-ai run getActiveProfile
+npx -y anki-ai run getProfiles
+npx -y anki-ai run loadProfile '{"name": "Study"}'
 ```
 
 ### Batch operations with multi
 ```bash
-npx -y mankey run multi '{
+npx -y anki-ai run multi '{
   "actions": [
     { "action": "deckNames" },
     { "action": "modelNames" },
@@ -318,29 +318,29 @@ npx -y mankey run multi '{
 
 ```bash
 # Via flag
-npx -y mankey --url http://192.168.1.100:8765 deck list
+npx -y anki-ai --url http://192.168.1.100:8765 deck list
 
 # Via environment variable
-ANKI_CONNECT_URL=http://192.168.1.100:8765 npx -y mankey deck list
+ANKI_CONNECT_URL=http://192.168.1.100:8765 npx -y anki-ai deck list
 ```
 
 ## MCP Server Mode
 
 ```bash
 # Start MCP server (default command)
-npx -y mankey
+npx -y anki-ai
 
 # Or explicitly
-npx -y mankey mcp
+npx -y anki-ai mcp
 ```
 
 Configure in Claude Desktop / MCP client:
 ```json
 {
   "mcpServers": {
-    "mankey": {
+    "anki-ai": {
       "command": "npx",
-      "args": ["-y", "mankey"]
+      "args": ["-y", "anki-ai"]
     }
   }
 }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mankey** is an MCP server and CLI for Anki integration via Anki-Connect. It provides 96 tools across 8 categories for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows. Ships compiled JS via npm (`npx mankey`), uses Bun for development.
+**Anki-AI** is an MCP server and CLI for Anki integration via Anki-Connect. It provides 96 tools across 8 categories for creating flashcards, managing reviews, analyzing learning data, and automating Anki workflows. Ships compiled JS via npm (`npx anki-ai`), uses Bun for development.
 
 ## Runtime & Commands
 
@@ -12,19 +12,19 @@ Use **Bun** (not Node.js) for all operations:
 
 ```bash
 # Development
-bun bin/mankey.ts mcp             # Start MCP server (Bun, fast)
+bun bin/anki-ai.ts mcp             # Start MCP server (Bun, fast)
 bun run dev                       # Watch mode MCP server
 bun run build                     # Compile to dist/ (tsc)
 bun run typecheck                 # Type checking only
 
 # CLI (development)
-bun bin/mankey.ts deck list       # Use Bun entry point
-bun bin/mankey.ts tools           # List all 96 tools
-bun bin/mankey.ts run version     # Run any tool
+bun bin/anki-ai.ts deck list       # Use Bun entry point
+bun bin/anki-ai.ts tools           # List all 96 tools
+bun bin/anki-ai.ts run version     # Run any tool
 
 # CLI (published, Node.js)
-npx mankey deck list              # Uses compiled dist/main.js
-npx mankey tools
+npx anki-ai deck list              # Uses compiled dist/main.js
+npx anki-ai tools
 
 # Testing
 bun test                          # Run all tests
@@ -47,7 +47,7 @@ git push                          # GitHub Actions publishes to npm
 ### Core Components
 
 ```
-bin/mankey.ts              # Bun development entry point (#!/usr/bin/env bun)
+bin/anki-ai.ts              # Bun development entry point (#!/usr/bin/env bun)
 src/
   main.ts                  # CLI entry point → compiles to dist/main.js (#!/usr/bin/env node)
   index.ts                 # MCP-only entry point (backward compat)
@@ -69,8 +69,8 @@ src/
     system.ts (17)         # sync, exportPackage, multi, setDueDate, etc.
   cli/
     index.ts               # createProgram() factory with Commander.js
-    run.ts                 # Generic: mankey run <tool> [json]
-    tools-list.ts          # mankey tools [--category X] [--json]
+    run.ts                 # Generic: anki-ai run <tool> [json]
+    tools-list.ts          # anki-ai tools [--category X] [--json]
     decks.ts, notes.ts, cards.ts, models.ts, stats.ts  # Category subcommands
   mcp/
     server.ts              # createServer() factory
@@ -248,7 +248,7 @@ Anki uses space-separated tags internally, but MCP tools accept arrays:
    - Updates CHANGELOG.md
    - Commits version bump with `chore(release): X.X.X [skip ci]`
 
-3. Verify: `npm view mankey version`
+3. Verify: `npm view anki-ai version`
 
 **Known Issue**: Commitlint footer length
 - Semantic-release generates long URLs that exceed 100 chars
@@ -329,8 +329,8 @@ No frontend dependencies - this is a CLI tool and MCP server.
 
 ## npm Packaging
 
-- `bin/mankey.ts` - Bun-only entry (development)
-- `dist/main.js` - Compiled Node.js entry (`#!/usr/bin/env node`) - this is what `npx mankey` runs
+- `bin/anki-ai.ts` - Bun-only entry (development)
+- `dist/main.js` - Compiled Node.js entry (`#!/usr/bin/env node`) - this is what `npx anki-ai` runs
 - `dist/index.js` - MCP-only entry for programmatic use
 - `prepublishOnly` runs `tsc && chmod +x dist/main.js`
 - Files shipped: `dist/`, `bin/`, `src/`, `README.md`, `LICENSE`
