@@ -11,6 +11,12 @@ MCP server and CLI for Anki integration via Anki-Connect. 96 tools across 8 cate
 
 ![Anki-AI](./screenshots/anki-ai.png)
 
+## Install as Claude Skill
+
+```bash
+npx skills add briansunter/anki-ai
+```
+
 ## Quick Start
 
 ### Prerequisites
